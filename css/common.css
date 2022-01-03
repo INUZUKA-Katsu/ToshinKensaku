@@ -258,6 +258,7 @@ table.search-form-inner {
 td.form-header {
 	padding: 5px;
 	background-color: #49afcd;
+	background-color: #72aae2;
 	*background-color: #2f96b4;
 	color: #ffffff;
 	width: 120px;
@@ -266,6 +267,7 @@ td.form-header {
 td.form-contents {
 	padding: 5px;
 	background-color: #e4f3ff;
+	background-color: #e2f1f1;
 }
 
 td.buttons {
@@ -366,6 +368,7 @@ tr.search-result-header {
 	vertical-align: middle;
 	text-align: left;
 	background-color: #49afcd;
+	background-color: #72aae2;
 	*background-color: #2f96b4;
 }
 
