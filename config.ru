@@ -1,4 +1,4 @@
-require_relative 'Kensaku.rb'
+require_relative 'kensaku.rb'
 require_relative 'hinagata.rb'
 require 'cgi'
 require 'uri'
