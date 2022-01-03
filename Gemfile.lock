@@ -1,0 +1,22 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    holiday_japan (1.4.4)
+    nio4r (2.5.8)
+    puma (5.5.2)
+      nio4r (~> 2.0)
+    rack (2.2.3)
+
+PLATFORMS
+  x86_64-darwin-19
+
+DEPENDENCIES
+  holiday_japan
+  puma
+  rack
+
+RUBY VERSION
+   ruby 2.7.1p83
+
+BUNDLED WITH
+   2.2.3
