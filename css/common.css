@@ -1,0 +1,434 @@
+body {
+	position: relative;
+	/*
+	padding-top: 10px;
+	padding-bottom: 10px;
+	padding-right: 10px;
+	*/
+	padding-left: 30px;
+	background-image: url("../images/bg.gif");
+}
+
+font.categoryTitle {
+	font-weight: bold;
+	font-size: 12pt;
+}
+
+.root {
+	width: 900px;
+}
+
+.container {
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+
+.container.header {
+
+}
+
+.container.footer {
+	font-size: 8pt;
+	text-align: center;
+	border-color: silver;
+	border-style: ridge;
+	border-width: 1px;
+}
+
+.section {
+	padding-left: 30px;
+}
+
+a.header-link {
+	color: black;
+	text-decoration: none;
+}
+
+a.header-link:hover {
+	color: black;
+	text-decoration: none;
+}
+
+.message-section {
+	width: 700px;
+	padding-left: 30px;
+}
+
+.section-title {
+	font-size: 12pt;
+	font-weight: bold;
+	line-height: 20px;
+	color: #ffffff;
+	vertical-align: baseline;
+	white-space: nowrap;
+	text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+	background-color: #999999;
+	padding: 1px 4px 2px;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	background-color: #3a87ad;
+}
+
+.menu-label {
+	font-size: 12pt;
+	font-weight: bold;
+	line-height: 20px;
+	color: #ffffff;
+	vertical-align: baseline;
+	white-space: nowrap;
+	text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+	background-color: #999999;
+	padding: 1px 4px 2px;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	background-color: #3a87ad;
+}
+
+div.header-text {
+	padding-left: 30;
+}
+
+div.lfloatbox {
+	float: left;
+}
+
+div.lfloatbox.paging-link {
+	font-size: 12pt;
+}
+
+div.paging-item {
+	text-align: center;
+	padding-right: 100px;
+}
+
+div.radios {
+	line-height: 24px;
+}
+
+div.mini-spacer {
+	padding: 1px;
+}
+
+div.spacer {
+	padding: 3px;
+}
+
+div.middle-spacer {
+	padding: 10px;
+}
+
+div.large-spacer {
+	padding: 30px;
+}
+
+div.white-canvas {
+	background-color: white;
+}
+
+div.scrollable {
+	height: 680px;
+	overflow: auto;
+}
+div.scrollable2 {
+	height: 50%;
+	overflow: auto;
+}
+
+hr.divide-line {
+	border-style: solid;
+}
+
+font.index {
+	font-size: 16pt;
+}
+
+.navigator-analyze {
+	font-size: 10pt;
+	width: 80px;
+}
+
+.navigator-admin {
+	font-size: 10pt;
+	width: 100px;
+}
+
+tr.mini-spacer {
+	padding: 1px;
+}
+
+tr.spacer {
+	line-height: 3px;
+}
+
+tr.middle-spacer {
+	padding: 10px;
+}
+
+tr.large-spacer {
+	padding: 30px;
+}
+
+/* ------------------------------
+窶｢ﾂｪﾂ静債湘ｳ窶ｹﾂｵ
+------------------------------ */
+td.title {
+	background-color: #C0C0FF;
+	border: 1pt solid #333333;
+	text-align: center;
+}
+
+td.value {
+	border: 1pt solid #333333;
+	text-align: right;
+}
+
+table tr th.center {
+	vertical-align: middle;
+	text-align: center;
+}
+
+table tr th.header {
+	background-color: #C0C0FF;
+}
+
+table tr td.center {
+	vertical-align: middle;
+	text-align: center;
+}
+
+table tr td.right {
+	vertical-align: middle;
+	text-align: right;
+}
+
+table tr td.header {
+	background-color: #C0C0FF;
+}
+
+table tr td.notice {
+	background-color: #f2dede;
+}
+
+table tr td.white {
+	background-color: white;
+}
+
+/* ------------------------------
+ﾆ稚ﾆ鍛ﾆ耽ﾂーﾂ湘ｮ窶｢ﾃｱ
+------------------------------ */
+table.footerInfo {
+	width: 900px;
+	border-color: #D3D3D3;
+	border-style: solid;
+}
+
+div.footerInfoHeader {
+	text-align: left;
+	font-size: 12pt;
+	color: #336699;
+}
+
+font.footerInfoMark {
+	font-size: 10pt;
+	color: #336699
+}
+
+font.footerInfo {
+	font-size: 10pt;
+}
+
+/* ------------------------------
+ﾅ椎ｸﾂ催ｵﾆ稚ﾆ辿ﾂーﾆ停ぎ
+------------------------------ */
+table.search-form {
+	width: 900px;
+	border: 0;
+	border-color: #ffffff;
+	table-layout: fixed;
+}
+
+table.search-form-inner {
+	border: 0;
+	border-color: #ffffff;
+	text-align: left;
+}
+
+td.form-header {
+	padding: 5px;
+	background-color: #49afcd;
+	*background-color: #2f96b4;
+	color: #ffffff;
+	width: 120px;
+}
+
+td.form-contents {
+	padding: 5px;
+	background-color: #e4f3ff;
+}
+
+td.buttons {
+	padding: 5px;
+	text-align: center;
+	background-color: #f0f0f0;
+}
+
+div.search-hint {
+	font-size: 8pt;
+	color: #cc0033;
+}
+
+div.right-text {
+	text-align: right;
+	font-size: 10pt;
+}
+
+input.checkbox {
+	width: 30px;
+}
+
+input.radio {
+	width: 30px;
+}
+
+input.button {
+	width: 80px;
+	height: 30px;
+}
+
+input.len2 {
+	width: 40px;
+}
+
+input.len4 {
+	width: 60px;
+}
+
+input.len6 {
+	width: 80px;
+}
+
+input.len10 {
+	width: 200px;
+}
+
+input.len20 {
+	width: 400px;
+}
+
+input.len70 {
+	width: 800px;
+}
+
+input.large {
+	width: 300px;
+}
+
+input.xlarge {
+	width: 500px;
+}
+
+select.era {
+	width: 80px;
+}
+
+select.mini {
+	width: 65px;
+}
+
+select.midium {
+	width: 155px;
+}
+
+select.xlarge {
+	width: 350px;
+}
+
+textarea.xxlarge {
+	width: 600px;
+	height: 100px;
+}
+
+form .required span {
+	color: red;
+}
+
+/* ------------------------------
+ﾅ椎ｸﾂ催ｵﾅ停ｹ窶ｰﾃ・
+------------------------------ */
+table.search-result {
+	width: 900px;
+}
+
+tr.search-result-header {
+	padding: 5px;
+	vertical-align: middle;
+	text-align: left;
+	background-color: #49afcd;
+	*background-color: #2f96b4;
+}
+
+td.search-result-header-left {
+	padding: 5px;
+	text-align: center;
+	color: #ffffff;
+}
+
+td.search-result-header-right {
+	padding: 5px;
+	text-align: left;
+	color: #ffffff;
+}
+
+tr.search-result-body {
+	padding: 5px;
+	vertical-align: top;
+	text-align: left;
+	background-color: #ffffff;
+}
+
+td.search-result-body-left {
+	padding: 5px;
+	text-align: left;
+}
+
+td.search-result-body-right {
+	padding: 5px;
+	text-align: left;
+}
+
+/* ------------------------------
+窶徙ﾋ弯ﾂ／窶｢ﾃ渉更窶廃ﾆ稚ﾆ辿ﾂーﾆ停ぎ
+------------------------------ */
+table.regist-form {
+	width: 900px;
+	border: 0;
+	border-color: #ffffff;
+}
+
+table.regist-form-inner {
+	border: 0;
+	border-color: #ffffff;
+	text-align: left;
+}
+
+td.regist-form-hint {
+	color: #D06600;
+	/*color: #D0ff00;*/
+	margin:10pt 10pt 0pt 10pt;
+	font-size: 8pt;
+}
+
+.red {
+	color: red;
+}
+
+.blue {
+	color: blue;
+}
+
+hr {
+	border-color: rgb(200, 200, 200);
+}
+

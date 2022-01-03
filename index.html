@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>答申データベース検索</title>
+<link rel="shortcut icon" type="image/x-icon" href="/images/favicon.ico"/>
+<link rel="stylesheet" media="screen" href="./css/common.css"/>
+<link rel="stylesheet" media="screen" href="./css/bootstrap.css"/>
+
+<link rel="stylesheet" media="screen" href="/bootstrap/css/bootstrap.form.css"/>
+<link rel="stylesheet" media="screen" href="/treeview/jquery.treeview.css"/>
+<script src="/javascripts/common.js" type="text/javascript"></script>
+<script src="/javascripts/jquery-1.8.0.min.js" type="text/javascript"></script>
+<script src="/javascripts/jquery.cookie.js" type="text/javascript"></script>
+<script src="/bootstrap/js/bootstrap-alert.js" type="text/javascript"></script>
+<script src="/treeview/jquery.treeview.js" type="text/javascript"></script>
+<script src="/treeview/jquery.treeview.async.js" type="text/javascript"></script>
+</head>
+<body data-spy="scroll">
+	<div id="wrap" class="root">
+		<header class="header">
+			<div class="container header">
+				<div class="lfloatbox">
+					<h4><a href="/report/" class="header-link">横浜市情報公開・個人情報保護審査会</a></h4>
+					<h2><a href="/report/" class="header-link">答申データベース検索</a></h2>
+				</div>
+				<div class="lfloatbox" style="padding-top: 10px; padding-left: 50px;">
+					
+						<a href="/report/help" target="_blank" class="btn btn-small btn-info">ヘルプ</a>
+					
+				</div>
+			</div>
+		</header>
+		<div id="container-wrap">
+			<div class="container">
+				<div id="content">
+					
+					
+					
+
+		<div class="header-text">
+			<font color="#336699">本システムは、公開されているPDFデータを元に、横浜市情報公開・個人情報保護審査会の答申内容を検索できるようにしたものです。</font>
+		</div>
+
+		<div class="middle-spacer"></div>
+
+		<form name="reportActionForm" method="post" action="/report/search">
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#0" target="_blank"><font style="color:#ffffff;">答申種別</font></a>
+					</td>
+
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td><input type="checkbox" name="johoKokai" value="on" checked="checked" class="checkbox">情報公開条例</td>
+								<td width="10"><br></td>
+								<td><input type="checkbox" name="kojinjohoHogo" value="on" checked="checked" class="checkbox">個人情報保護条例</td>
+							</tr>
+						</table>
+						<div class="search-hint">複数の選択が可能です。必ず１つ以上選択して下さい。</div>
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#11" target="_blank"><font style="color:#ffffff;">請求種別</font></a>
+					</td>
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td><input type="checkbox" name="kaijiSeikyu" value="on" class="checkbox">開示請求</td>
+								<td width="10"><br></td>
+								<td><input type="checkbox" name="teiseiSeikyu" value="on" class="checkbox">訂正請求</td>
+								<td width="10"><br></td>
+								<td><input type="checkbox" name="teishiSeikyu" value="on" class="checkbox">利用停止請求</td>
+							</tr>
+						</table>
+						<div class="search-hint">
+							複数の選択が可能です。個人情報保護条例を検索する場合は１つ以上選択して下さい。<br>
+							情報公開条例を検索する場合は選択する必要はありません。
+						</div>
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#1" target="_blank"><font style="color:#ffffff;">用語検索</font></a>
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td><input type="radio" name="searchType" value="and" checked="checked" class="radio">以下の語句を全て含む</td>
+								<td width="10"><br></td>
+								<td><input type="radio" name="searchType" value="or" class="radio">以下の語句を一つ以上含む</td>
+							</tr>
+						</table>
+						<input type="text" name="searchQuery" value="" class="xlarge">
+						<div class="search-hint">複数の語句が指定可能です。（スペース区切り：全半角不問）</div>
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#1" target="_blank"><font style="color:#ffffff;">詳細用語検索</font></a>
+					</td>
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td><font color="#336699">[審査会の結論]</font></td>
+								<td width="10"><br></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><input type="radio" name="jisshikikanSearchType" value="and" checked="checked" class="radio">以下の語句を全て含む</td>
+								<td width="10"><br></td>
+								<td><input type="radio" name="jisshikikanSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
+							</tr>
+						</table>
+						<input type="text" name="ketsuronSearchQuery" value="" class="xlarge">
+						<div class="search-hint">複数の語句が指定可能です。（スペース区切り：全半角不問）　以下同じ。</div>
+
+						<table class="search-form-inner">
+							<tr>
+								<td><font color="#336699">[審査請求人の主張の要旨]</font></td>
+								<td width="10"><br></td>
+							</tr>
+							<tr>
+								<td><input type="radio" name="seikyuninSearchType" value="and" checked="checked" class="radio">以下の語句を全て含む</td>
+								<td width="10"><br></td>
+								<td><input type="radio" name="seikyuninSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
+							</tr>
+						</table>
+						<input type="text" name="seikyuninSearchQuery" value="" class="xlarge">
+						<div class="middle-spacer"></div>
+
+						<table class="search-form-inner">
+							<tr>
+								<td><font color="#336699">[実施機関の説明の要旨]</font></td>
+								<td width="10"><br></td>
+							</tr>
+							<tr>
+								<td><input type="radio" name="jisshikikanSearchType" value="and" checked="checked" class="radio">以下の語句を全て含む</td>
+								<td width="10"><br></td>
+								<td><input type="radio" name="jisshikikanSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
+							</tr>
+						</table>
+						<input type="text" name="jisshikikanSearchQuery" value="" class="xlarge">
+						<div class="middle-spacer"></div>
+						<table class="search-form-inner">
+							<tr>
+								<td><font color="#336699">[審査会の判断]</font></td>
+								<td width="10"><br></td>
+							</tr>
+							<tr>
+								<td><input type="radio" name="shinsakaiSearchType" value="and" checked="checked" class="radio">以下の語句を全て含む</td>
+								<td width="10"><br></td>
+								<td><input type="radio" name="shinsakaiSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
+							</tr>
+						</table>
+						<input type="text" name="shinsakaiSearchQuery" value="" class="xlarge">
+						<div class="middle-spacer"></div>
+						<table class="search-form-inner">
+							<tr>
+								<td><font color="#336699">[審査会の判断の結論部分]</font></td>
+								<td width="10"><br></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><input type="radio" name="shinsakailastSearchType" value="and" checked="checked" class="radio">以下の語句を全て含む</td>
+								<td width="10"><br></td>
+								<td><input type="radio" name="shinsakailastSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
+							</tr>
+						</table>
+						<input type="text" name="shinsakailastSearchQuery" value="" class="xlarge">
+
+						<div class="middle-spacer"></div>
+
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="buttons">
+						<input type="submit" value="検索" class="button">
+						<input type="reset" value="クリア" class="button">
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#4" target="_blank"><font style="color:#ffffff;">部会・委員</font></a>
+					</td>
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td><font color="#336699">[答申を行った部会]</font></td>
+								<td width="10"><br></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td>
+									<select name="bukai" class="xlarge">
+											<option value=""></option>
+										
+											<option value="第一部会">第一部会</option>
+										
+											<option value="第二部会">第二部会</option>
+										
+											<option value="第三部会">第三部会</option>
+										
+											<option value="第四部会">第四部会</option>
+
+											<option value="制度運用調査部会">制度運用調査部会</option>
+
+									</select>
+									<div class="spacer"></div>
+								</td>
+							</tr>
+						</table>
+						<input type="text" name="bukaiSearchQuery" value="" class="xlarge">
+						<div class="search-hint">
+							複数の語句が指定可能です。（スペース区切り：全半角不問）<br>
+							複数語を指定したときは、そのいずれかを含むものを検索します（OR検索）。
+						</div>
+						<div class="middle-spacer"></div>
+
+						<table class="search-form-inner">
+							<tr>
+								<td><font color="#336699">[答申を行った委員]</font></td>
+								<td width="10"><br></td>
+							</tr>
+						</table>
+						<input type="text" name="iinSearchQuery" value="" class="xlarge">
+						<div class="search-hint">
+							複数の語句が指定可能です。（スペース区切り：全半角不問）<br>
+							複数語を指定したときは、そのいずれかを含むものを検索します（OR検索）。
+						</div>
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#4" target="_blank"><font style="color:#ffffff;">実施機関</font></a>
+					</td>
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td>
+									<select name="jisshiKikan" class="xlarge"><option value=""></option>
+										
+											<option value="市長">市長</option>
+										
+											<option value="議長">議長</option>
+										
+											<option value="水道事業管理者">水道事業管理者</option>
+										
+											<option value="病院事業管理者">病院事業管理者</option>
+
+											<option value="交通事業管理者">交通事業管理者</option>
+
+											<option value="教育委員会">教育委員会</option>
+										
+											<option value="選挙管理委員会">選挙管理委員会</option>
+										
+											<option value="人事委員会">人事委員会</option>
+										
+											<option value="監査委員">監査委員</option>
+										
+											<option value="農業委員会">農業委員会</option>
+										
+											<option value="固定資産評価審査委員会">固定資産評価審査委員会</option>
+										
+											<option value="公立大学法人横浜市立大学">公立大学法人横浜市立大学</option></select>
+									<div class="spacer"></div>
+									<input type="text" name="jisshiaKikanQuery" value="" class="xlarge">
+								</td>
+							</tr>
+						</table>
+						<div class="search-hint">
+							複数の語句が指定可能です。（スペース区切り：全半角不問）<br>
+							検索の対象となる諮問庁がプルダウンリストに存在しない場合は、入力ボックスで直接指定して下さい。
+						</div>
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#5" target="_blank"><font style="color:#ffffff;">答申日</font></a>
+					</td>
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td>
+									<select name="reportDateFromEra" class="era"><option value=""></option>
+										
+											<option value="reiwa">令和</option>
+										
+											<option value="heisei">平成</option></select>
+									<input type="text" name="reportDateFromYear" maxlength="2" value="" class="len2">年
+									<input type="text" name="reportDateFromMonth" maxlength="2" value="" class="len2">月
+									<input type="text" name="reportDateFromDate" maxlength="2" value="" class="len2">日
+									<select name="reportDateRange" class="mini"><option value=""></option>
+										
+											<option value="kan">～</option>
+										
+											<option value="zen">以前</option>
+										
+											<option value="go">以降</option></select>
+									<select name="reportDateToEra" class="era"><option value=""></option>
+										
+											<option value="reiwa">令和</option>
+										
+											<option value="heisei">平成</option></select>
+									<input type="text" name="reportDateToYear" maxlength="2" value="" class="len2">年
+									<input type="text" name="reportDateToMonth" maxlength="2" value="" class="len2">月
+									<input type="text" name="reportDateToDate" maxlength="2" value="" class="len2">日
+								</td>
+							</tr>
+						</table>
+						<div class="search-hint">半角数字で入力して下さい。</div>
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="form-header">
+						<a href="/report/help#6" target="_blank"><font style="color:#ffffff;">答申番号</font></a>
+					</td>
+					<td class="form-contents">
+						<table class="search-form-inner">
+							<tr>
+								<td>
+									<input type="text" name="reportNoFromNo" maxlength="6" value="" class="len6">号
+									<select name="reportNoRange" class="mini"><option value=""></option>										
+											<option value="kan">～</option>
+										
+											<option value="zen">以前</option>
+										
+											<option value="go">以降</option></select>
+									<input type="text" name="reportNoToNo" maxlength="6" value="" class="len6">号
+								</td>
+							</tr>
+						</table>
+						<div class="search-hint">半角数字で入力して下さい。</div>
+					</td>
+				</tr>
+			</table>
+
+			<div class="spacer"></div>
+
+			<table class="search-form">
+				<tr>
+					<td class="buttons">
+						<input type="submit" value="検索" class="button">
+						<input type="reset" value="クリア" class="button">
+					</td>
+				</tr>
+			</table>
+
+			<input type="hidden" name="openFlag" value="1">
+			<input type="hidden" name="status" value="">
+		</form>
+
+		<div class="spacer"></div>
+		
+		<div class="large-spacer"></div>
+
+		<a href="/">メニューへ</a>
+
+		<div class="middle-spacer"></div>
+
+					<table class="footerInfo">
+						<tr>
+							<td colspan="2">
+								<div class="footerInfoHeader">【検索について】</div>
+							</td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">検索ボタンをクリックすると、指定した条件で検索を行います。用語検索と詳細用語検索はどれかひとつの入力欄に用語を入力して検索してください。複数の入力欄に用語を入力した場合は、一番下の入力欄だけが有効となります。</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">クリアボタンをクリックすると、指定した条件を初期表示の状態に戻します。</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">条件は組み合わせて指定できます。</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">答申種別に何もチェックせずに検索を行った場合は、答申種別を無条件として、すなわち答申種別では絞込みを行わずに検索します。</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">検索結果は答申番号の降順で表示します。</font></td>
+						</tr>
+						<tr>
+							<td colspan="2"><br></td>
+						</tr>
+						<tr>
+							<td colspan="2">
+								<div class="footerInfoHeader">【本システムのご利用にあたっての注意事項】</div>
+							</td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">本サイトは横浜市の公式サイトではありません。横浜市のホームページに掲載される答申のPDFデータから機械的に情報を抽出してデータベースを作成しています。データ抽出がうまくいかないことが原因で検索結果に漏れが生じる可能性がありますのでご了承ください。また、実施機関の個人名は答申時点の個人名です。</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">本システムは、運用上の都合やシステム改善等の目的により予告なく構成を変更する場合があります。あらかじめ御了承ください。</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">この検索ページに関するご意見・ご感想などは<a
+									href="mailto:inuzuka0601@gmail.com">こちら</a>までお願いします。<br>
+									（いただいた御意見等については、システム改善の参考にさせていただきますが、個別には返信できない場合があります。）
+							</font></td>
+						</tr>
+					</table>
+	
+					<div class="middle-spacer"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
