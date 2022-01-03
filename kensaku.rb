@@ -2,6 +2,7 @@ require 'json'
 require 'kconv'
 require "net/https"
 require 'open-uri'
+require 'pdf-reader'
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 
@@ -191,6 +192,21 @@ def make_midashi_json
   num2url,num2kenmei = get_bango_url_kenmei
   ary=[]
   Dir.chdir(__dir__)
+  #textフォルダの答申テキストファイルをtmpフォルダにコピー
+  FileUtils.cp(Dir.glob("text/*.txt"),"tmp")
+  #市サイトのPDFとtextフォルダのテキストファイルを比較して不足するデータを取得する。
+  json= File.read("text/bango_hizuke_kikan.json")
+  #p json
+  bango_list = JSON.parse(json).map{|data| data[0][0]}
+  #p "bango_list=>"+bango_list.to_s
+  current_bango_list = num2url.keys.map{|bango| bango.match(/\d+/)[0]}
+  #p "current_bango_list=>"+current_bango_list.to_s
+  lack_bango_list = current_bango_list - bango_list
+  #p "lack_bango_list=>"+lack_bango_list.to_s
+  File.write("tmp/lack_bango_list.json",JSON.generate(lack_bango_list))
+  #********************************************************************
+  #ここに不足分のPDFファイルをダウロードしてテキストを抽出し、テキストファイル保存する処理を付加する。
+  #**********************************************************************
   Dir.glob("tmp/答申*txt").each do |f|
   	str = File.read(f).gsub(/\s|　/,"").tr("０-９","0-9")
     begin
@@ -254,6 +270,7 @@ def make_midashi_json
      end
   end
   File.write("tmp/bango_hizuke_kikan.json",JSON.generate(ary))
+  FileUtils.cp("tmp/bango_hizuke_kikan.json","text/bango_hizuke_kikan.json") #Heroku上では無効
   ary
 end
 #make_midashi_json

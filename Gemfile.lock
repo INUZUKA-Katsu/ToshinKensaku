@@ -1,10 +1,21 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    Ascii85 (1.1.0)
+    afm (0.2.2)
+    hashery (2.1.2)
     nio4r (2.5.8)
+    pdf-reader (2.8.0)
+      Ascii85 (~> 1.0)
+      afm (~> 0.2.1)
+      hashery (~> 2.0)
+      ruby-rc4
+      ttfunk
     puma (5.5.2)
       nio4r (~> 2.0)
     rack (2.2.3)
+    ruby-rc4 (0.1.5)
+    ttfunk (1.7.0)
 
 PLATFORMS
   ruby
@@ -12,6 +23,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  pdf-reader
   puma
   rack
 
