@@ -28,30 +28,34 @@ class ToshinApp
       #Postリクエストのとき、Pyramid.rbのmainを実行する。
   	  param = req.POST()
       joken = main(param)
-      p "joken=>"+joken.to_s
+      #p "joken=>"+joken.to_s
       toshin = Toshin.new
       h = toshin.get_hinagata_data(joken)
-      res = []
-      if joken.keys.include? :freeWord
-        hinagata = HINAGATA
+      if h.size>0
+        res = []
+        if joken.keys.include? :freeWord
+          hinagata = HINAGATA
+        else
+          hinagata = HINAGATA.sub(/<!--freeWord_search_start-->.*<!--freeWord_search_end-->/m,"")
+        end
+        h.keys.sort_by{|bango| bango.match(/\d+/)[0].to_i}.reverse.each_with_index do |num,i|
+        	 p num unless h[num][:url]
+           res[i] = hinagata
+           .sub(/<--NO-->/,(i+1).to_s)
+           .sub(/<--答申日-->/,h[num][:toshinbi])
+           .sub(/<--答申番号-->/,num)
+           .sub(/<--部会-->/,h[num][:bukai].to_s)
+           .sub(/<--実施機関-->/,h[num][:jisshikikan].to_s)
+           .sub(/<--件名-->/,h[num][:kenmei].to_s)
+           .sub(/<--URL-->/,URL+h[num][:url].to_s)
+           if joken.keys.include? :freeWord
+             res[i].sub!(/<--該当部分-->/,h[num][:matched_range])
+           end
+        end
+        html = File.read("SearchResult.html").sub(/<--検索結果-->/,res.join("\n"))
       else
-        hinagata = HINAGATA.sub(/<!--freeWord_search_start-->.*<!--freeWord_search_end-->/m,"")
+        html = File.read("SearchResult.html").sub(/<--検索結果-->/,"指定された条件に合致する答申は見つかりませんでした。")
       end
-      h.keys.sort_by{|bango| bango.match(/\d+/)[0].to_i}.reverse.each_with_index do |num,i|
-      	 p num unless h[num][:url]
-         res[i] = hinagata
-         .sub(/<--NO-->/,(i+1).to_s)
-         .sub(/<--答申日-->/,h[num][:toshinbi])
-         .sub(/<--答申番号-->/,num)
-         .sub(/<--部会-->/,h[num][:bukai].to_s)
-         .sub(/<--実施機関-->/,h[num][:jisshikikan].to_s)
-         .sub(/<--件名-->/,h[num][:kenmei].to_s)
-         .sub(/<--URL-->/,URL+h[num][:url].to_s)
-         if joken.keys.include? :freeWord
-           res[i].sub!(/<--該当部分-->/,h[num][:matched_range])
-         end
-      end
-      html = File.read("SearchResult.html").sub(/<--検索結果-->/,res.join("\n"))
       header["Content-Type"]   = 'text/html'
       response                 = html
       #Heroku環境では市サイトから取得したファイルはtmpフォルダに保存するほかないが、
