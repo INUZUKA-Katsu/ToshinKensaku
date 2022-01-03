@@ -6,11 +6,10 @@ require 'uri'
 
 Encoding.default_external = "utf-8"
 
-#make_midashi_json
+make_midashi_json
 
 class ToshinApp
   #初期設定
-  make_midashi_json
 
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
