@@ -6,7 +6,7 @@ require 'uri'
 
 Encoding.default_external = "utf-8"
 
-make_midashi_json
+#make_midashi_json
 
 class ToshinApp
   #初期設定
