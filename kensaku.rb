@@ -208,10 +208,10 @@ def make_midashi_json
   #ここに不足分のPDFファイルをダウロードしてテキストを抽出し、テキストファイル保存する処理を付加する。
   #**********************************************************************
   Dir.glob("tmp/答申*txt").each do |f|
-  	str = File.read(f).gsub(/\s|　/,"").tr("０-９","0-9")
+  	str = File.read(f).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
     begin
       if ans1 = str.match(/.*様(?=横浜市情報公開・個人情報保護審査会会長|横浜市公文書公開審査会会長)/)
-        item = ans1[0].scan(/（(答申第[\d-]+号.*?)）(..元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
+        item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)](..元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
         bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[2]        
         jisshikikan = jisshikikan.gsub(/市長|議長|水道事業管理者|病院事業管理者|交通事業管理者|選挙管理委員会委員長|人事委員会委員長|監査委員|農業委員会会長|固定資産評価審査委員会委員長|理事長/,'\0 ').gsub(/様/,', ') 
       end
@@ -252,7 +252,14 @@ def make_midashi_json
     end
     ary << [bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu,f]
   end
-  ary = ary.sort_by{|a| a[0].match(/\d+/)[0].to_i}
+  ary.each do |a|
+    p a unless a[0]
+  end
+  begin
+    ary = ary.sort_by{|a| a[0].match(/\d+/)[0].to_i}
+  rescue
+    p ary
+  end
   ary = ary.map do |a|
     num = a[0].match(/\d+/)[0]
     a << num2kenmei[num] << num2url[num]
@@ -441,7 +448,13 @@ class Toshin
       end
       #要求された語句を含むことを確認できたらパターンマッチしてマッチした部分を返す
       begin
-      str.match(/#{reg_pattern(word_ary)}/m)[0]
+      str_range = str.match(/#{reg_pattern(word_ary)}/m)[0]
+      str_range.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/).
+                map do |s|
+                  s.gsub!(/#{word_ary.join("|")}/,'<strong>\&</strong>')
+                  s.chomp
+                end.
+                join("<br><br>")
       rescue
         #p reg_pattern(word_ary)
         #p str
@@ -453,7 +466,7 @@ class Toshin
       str = File.read(get_file_name(bango)).encode("UTF-8", :invalid => :replace)
       matched_range = exec_search(str,word_ary,type,range_joken)
       if matched_range
-        matched_range = matched_range[-800,800] if matched_range.size>800
+        #matched_range = matched_range[-800,800] if matched_range.size>800
         #p bango
         #p matched_range
         h2[bango] = {:matched_range => matched_range} 
