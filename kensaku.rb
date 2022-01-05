@@ -172,24 +172,43 @@ end
 def make_midashi_json
   def get_bango_url_kenmei
     uri = URI.parse(URL)
-    url_list = uri.read.scan(/href="(.*?\.html)">審査会答申一覧/).flatten
+    url_list = uri.read.scan(/href="(.*?\.html)">.*?審査会答申一覧/).flatten
     host = uri.host
     
     toshin_url = {}
     toshin_kenmei = {}
+
     url_list.each do |url|
       uri =  URI.parse("https://"+host+url)
-      ary = uri.read.scan(/href="(.*?files.*?pdf.*?<\/a><br>.*?)<\/li>/i).flatten
-      ary.each do |a|
-        url_num = a.scan(/(.*pdf).*(答申.*?)[\(（].*?<br>(.*)/i).flatten
-        num = url_num[1].tr("０-９","0-9").match(/\d+/)[0]
-        toshin_url[num] = url_num[0]
-        toshin_kenmei[num] = url_num[2]
+
+    #  ary = uri.read.scan(/href="(.*?files.*?pdf.*?<\/a><br>.*?)<\/li>/i).flatten
+    #  ary.each do |a|
+    #    url_num = a.scan(/(.*pdf).*(答申.*?)[\(（].*?<br>(.*)/i).flatten
+    #    num = url_num[1].tr("０-９","0-9").match(/\d+/)[0]
+    #    toshin_url[num] = url_num[0]
+    #    toshin_kenmei[num] = url_num[2]
+    #  end
+    #end
+
+      url_bango_kenmei_array = uri.read.scan(/<li>(<a.*?)<br>(.*?)<\/li>/i)
+      url_bango_kenmei_array.each do |url_bango_kenmei|
+        url_bango = url_bango_kenmei[0]
+        kenmei    = url_bango_kenmei[1]
+        url_bango.scan(/<a href="(.*?pdf)".*?(答申第.*?号(?!から)(まで)?)/).each do |u_b|
+          if ans = u_b[1].tr("０-９","0-9").match(/\d+/)
+            num = ans[0]
+          else
+            p "u_b[1] => "+u_b[1].to_s
+          end
+          toshin_url[num] = u_b[0]
+          toshin_kenmei[num] = kenmei
+        end
       end
     end
     [toshin_url,toshin_kenmei]
   end
   num2url,num2kenmei = get_bango_url_kenmei
+  #p num2url
   ary=[]
   Dir.chdir(__dir__)
   #textフォルダの答申テキストファイルをtmpフォルダにコピー
@@ -272,8 +291,12 @@ def make_midashi_json
          n << num.to_s 
        end
        a.unshift(n)
+     elsif a[0].match(/及び/)
+       res = a[0].match(/(\d+)号及び.*?(\d+)/)
+       a.unshift([ res[1],res[2] ])
      else
-       a.unshift([a[0].match(/\d+/)[0]])
+       res = a[0].match(/\d+/)
+       a.unshift([ res[0] ])
      end
   end
   File.write("tmp/bango_hizuke_kikan.json",JSON.generate(ary))
@@ -482,3 +505,4 @@ end
 #p h
 #p h["答申第1442号から第1444号まで"]
 
+ 
