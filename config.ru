@@ -7,6 +7,7 @@ require 'uri'
 Encoding.default_external = "utf-8"
 
 #make_midashi_json
+FileUtils.cp(Dir.glob("text/*.*"),"tmp")
 
 class ToshinApp
   #初期設定
