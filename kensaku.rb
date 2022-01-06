@@ -263,7 +263,7 @@ def make_midashi_json
     bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu = get_midashi_data_from(f)
     num_array = get_num_array_from(bango)
     num       = num_array[0]
-    ary << [ num_array,bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu,f,num2url[num],num2kenmei[num] ]
+    ary << [ num_array,bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu,f,num2kenmei[num],num2url[num] ]
   end
   ary = ary.sort_by{|a| a[0][0].to_i}
   File.write("tmp/bango_hizuke_kikan.json",JSON.generate(ary))
