@@ -3,6 +3,7 @@ require 'kconv'
 require "net/https"
 require 'open-uri'
 require 'pdf-reader'
+require 'poppler'
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 
@@ -168,140 +169,107 @@ def change_encoding
   end
 end
 #change_encoding
-
-def make_midashi_json
-  def get_bango_url_kenmei
-    uri = URI.parse(URL)
-    url_list = uri.read.scan(/href="(.*?\.html)">.*?審査会答申一覧/).flatten
-    host = uri.host
-    
-    toshin_url = {}
-    toshin_kenmei = {}
-
-    url_list.each do |url|
-      uri =  URI.parse("https://"+host+url)
-
-    #  ary = uri.read.scan(/href="(.*?files.*?pdf.*?<\/a><br>.*?)<\/li>/i).flatten
-    #  ary.each do |a|
-    #    url_num = a.scan(/(.*pdf).*(答申.*?)[\(（].*?<br>(.*)/i).flatten
-    #    num = url_num[1].tr("０-９","0-9").match(/\d+/)[0]
-    #    toshin_url[num] = url_num[0]
-    #    toshin_kenmei[num] = url_num[2]
-    #  end
-    #end
-
-      url_bango_kenmei_array = uri.read.scan(/<li>(<a.*?)<br>(.*?)<\/li>/i)
-      url_bango_kenmei_array.each do |url_bango_kenmei|
-        url_bango = url_bango_kenmei[0]
-        kenmei    = url_bango_kenmei[1]
-        url_bango.scan(/<a href="(.*?pdf)".*?(答申第.*?号(?!から)(まで)?)/).each do |u_b|
-          if ans = u_b[1].tr("０-９","0-9").match(/\d+/)
-            num = ans[0]
-          else
-            p "u_b[1] => "+u_b[1].to_s
-          end
-          toshin_url[num] = u_b[0]
-          toshin_kenmei[num] = kenmei
+def get_bango_url_kenmei
+  uri = URI.parse(URL)
+  url_list = uri.read.scan(/href="(.*?\.html)">.*?審査会答申一覧/).flatten
+  host = uri.host
+  
+  toshin_url = {}
+  toshin_kenmei = {}
+  
+  url_list.each do |url|
+    uri =  URI.parse("https://"+host+url)
+    url_bango_kenmei_array = uri.read.scan(/<li>(<a.*?)<br>(.*?)<\/li>/i)
+    url_bango_kenmei_array.each do |url_bango_kenmei|
+      url_bango = url_bango_kenmei[0]
+      kenmei    = url_bango_kenmei[1]
+      url_bango.scan(/<a href="(.*?pdf)".*?(答申第.*?号(?!から)(まで)?)/).each do |u_b|
+        if ans = u_b[1].tr("０-９","0-9").match(/\d+/)
+          num = ans[0]
+        else
+          p "u_b[1] => "+u_b[1].to_s
         end
+        toshin_url[num] = u_b[0]
+        toshin_kenmei[num] = kenmei
       end
     end
-    [toshin_url,toshin_kenmei]
   end
-  num2url,num2kenmei = get_bango_url_kenmei
-  #p num2url
-  ary=[]
-  Dir.chdir(__dir__)
-  #textフォルダの答申テキストファイルをtmpフォルダにコピー
-  FileUtils.cp(Dir.glob("text/*.txt"),"tmp")
-  #市サイトのPDFとtextフォルダのテキストファイルを比較して不足するデータを取得する。
-  json= File.read("text/bango_hizuke_kikan.json")
-  #p json
-  bango_list = JSON.parse(json).map{|data| data[0][0]}
-  #p "bango_list=>"+bango_list.to_s
-  current_bango_list = num2url.keys.map{|bango| bango.match(/\d+/)[0]}
-  #p "current_bango_list=>"+current_bango_list.to_s
-  lack_bango_list = current_bango_list - bango_list
-  #p "lack_bango_list=>"+lack_bango_list.to_s
-  File.write("tmp/lack_bango_list.json",JSON.generate(lack_bango_list))
-  #********************************************************************
-  #ここに不足分のPDFファイルをダウロードしてテキストを抽出し、テキストファイル保存する処理を付加する。
-  #**********************************************************************
-  Dir.glob("tmp/答申*txt").each do |f|
-  	str = File.read(f).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
-    begin
-      if ans1 = str.match(/.*様(?=横浜市情報公開・個人情報保護審査会会長|横浜市公文書公開審査会会長)/)
-        item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)](..元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
-        bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[2]        
-        jisshikikan = jisshikikan.gsub(/市長|議長|水道事業管理者|病院事業管理者|交通事業管理者|選挙管理委員会委員長|人事委員会委員長|監査委員|農業委員会会長|固定資産評価審査委員会委員長|理事長/,'\0 ').gsub(/様/,', ') 
-      end
-      if ans2 = str.match(/[\(（回]([^\(（)回]*?部会)[\)）]/)
-        bukai = ans2[1]
-      else
-        bukai = ""
-      end
-      if ans3 = str.match(/(?<=部会[\)）]).{1,50}委員.{1,8}?(?=(\-\d|\(|（|《参考》|別表|別紙))/)
-        iin = ans3[0].gsub(/委員/,'\0 ')
-      else
-        iin = ""
-      end
-      if ans4 = str.match(/横浜市[^市]*?条例/)
-        if ans4[0].include? "公開"
-          jorei = "情報公開"
-          seikyu = "開示請求"
-        elsif ans4[0].include? "個人情報"
-          jorei = "個人情報"
-          if ans5 = str.match(/訂正決定|利用停止決定|開示決定/)
-            case ans5[0]
-            when "訂正決定"    ; seikyu = "訂正請求"
-            when "利用停止決定" ; seikyu = "利用停止請求"
-            when "開示決定"    ; seikyu = "開示請求"
-            else ; seikyu = ""
-            end
-          else
-            seikyu = ""
+  [toshin_url,toshin_kenmei]
+end
+def get_num_array_from(bango)
+   if bango.match(/から/)
+     res = bango.match(/(\d+)号から.*?(\d+)/)
+     n = []
+     (res[1].to_i..res[2].to_i).each do |num|
+       n << num.to_s 
+     end
+     return n
+   elsif bango.match(/及び/)
+     res = bango.match(/(\d+)号及び.*?(\d+)/)
+     return [ res[1], res[2] ]
+   else
+     res = bango.match(/\d+/)
+     return [ res[0] ]
+   end
+end
+def get_midashi_data_from(text_file)
+  str = File.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
+  begin
+    if ans1 = str.match(/.*様(?=横浜市情報公開・個人情報保護審査会会長|横浜市公文書公開審査会会長)/)
+      item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)](..元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
+      bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[2]        
+      jisshikikan = jisshikikan.gsub(/市長|議長|水道事業管理者|病院事業管理者|交通事業管理者|選挙管理委員会委員長|人事委員会委員長|監査委員|農業委員会会長|固定資産評価審査委員会委員長|理事長/,'\0 ').gsub(/様/,', ') 
+    end
+    if ans2 = str.match(/[\(（回]([^\(（)回]*?部会)[\)）]/)
+      bukai = ans2[1]
+    else
+      bukai = ""
+    end
+    if ans3 = str.match(/(?<=部会[\)）]).{1,50}委員.{1,8}?(?=(\-\d|\(|（|《参考》|別表|別紙))/)
+      iin = ans3[0].gsub(/委員/,'\0 ')
+    else
+      iin = ""
+    end
+    if ans4 = str.match(/横浜市[^市]*?条例/)
+      if ans4[0].include? "公開"
+        jorei = "情報公開"
+        seikyu = "開示請求"
+      elsif ans4[0].include? "個人情報"
+        jorei = "個人情報"
+        if ans5 = str.match(/訂正決定|利用停止決定|開示決定/)
+          case ans5[0]
+          when "訂正決定"    ; seikyu = "訂正請求"
+          when "利用停止決定" ; seikyu = "利用停止請求"
+          when "開示決定"    ; seikyu = "開示請求"
+          else ; seikyu = ""
           end
         else
-          jorei = ""
+          seikyu = ""
         end
       else
         jorei = ""
       end
-    rescue
-      p str
+    else
+      jorei = ""
     end
-    ary << [bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu,f]
-  end
-  ary.each do |a|
-    p a unless a[0]
-  end
-  begin
-    ary = ary.sort_by{|a| a[0].match(/\d+/)[0].to_i}
   rescue
-    p ary
+    p str
   end
-  ary = ary.map do |a|
-    num = a[0].match(/\d+/)[0]
-    a << num2kenmei[num] << num2url[num]
+  [ bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu ]
+end
+def make_midashi_json
+  num2url, num2kenmei = get_bango_url_kenmei
+  ary=[]
+  Dir.glob("tmp/答申*txt").each do |f|
+    bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu = get_midashi_data_from(f)
+    num_array = get_num_array_from(bango)
+    num       = num_array[0]
+    ary << [ num_array,bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu,f,num2url[num],num2kenmei[num] ]
   end
-  ary = ary.map do |a|
-     if a[0].match(/から/)
-       res = a[0].match(/(\d+)号から.*?(\d+)/)
-       n = []
-       (res[1].to_i..res[2].to_i).each do |num|
-         n << num.to_s 
-       end
-       a.unshift(n)
-     elsif a[0].match(/及び/)
-       res = a[0].match(/(\d+)号及び.*?(\d+)/)
-       a.unshift([ res[1],res[2] ])
-     else
-       res = a[0].match(/\d+/)
-       a.unshift([ res[0] ])
-     end
-  end
+  ary = ary.sort_by{|a| a[0][0].to_i}
   File.write("tmp/bango_hizuke_kikan.json",JSON.generate(ary))
   FileUtils.cp("tmp/bango_hizuke_kikan.json","text/bango_hizuke_kikan.json") #Heroku上では無効
-  ary
+  return ary
 end
 #make_midashi_json
 
@@ -443,12 +411,7 @@ class Toshin
     def reg_pattern(word_ary)
       # 検索語が複数の時は、"[^\n]*(検索語1|検索語2|検索語3).*(検索語1|検索語2|検索語3).*?\n"
       # という正規表現をつくる。  
-      if word_ary.size > 1 
         "[^\n]{0,100}(#{word_ary.join("|")})(.*(#{word_ary.join("|")}))?[^\n]{0,100}\n?"
-      # 検索語が一つの時は、"[^\n]*検索語(.*検索語.*?\n|.*?\n)" という正規表現をつくる。
-      else
-        "[^\n]{0,100}#{word_ary[0].to_s}(.*#{word_ary[0].to_s})?[^\n]{0,100}\n?"
-      end
     end
     def exec_search(str,word_ary,type,range_joken)
       if range_joken and ans = str.match(/#{range_joken}/m)
@@ -472,7 +435,7 @@ class Toshin
       #要求された語句を含むことを確認できたらパターンマッチしてマッチした部分を返す
       begin
       str_range = str.match(/#{reg_pattern(word_ary)}/m)[0]
-      str_range.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/).
+      str_range.scan(/[^\n]{0,100}#{word_ary.join("|")}(.*?#{word_ary.join("|")}[^\n]{0,100})?/).
                 map do |s|
                   s.gsub!(/#{word_ary.join("|")}/,'<strong>\&</strong>')
                   s.chomp
