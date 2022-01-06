@@ -4,7 +4,7 @@ HINAGATA=<<EOS
 					<tr class="search-result-header">
 						<td class="search-result-header-left" width="200px"><--NO--><br></td>
 						<td class="search-result-header-right" width="700px">
-							<a href="<--URL-->" class="btn btn-mini">本文表示</a>
+							<a href="<--URL-->" class="btn btn-mini" target="_blank">本文表示</a>
 						</td>
 					</tr>
 					<tr class="search-result-body">
