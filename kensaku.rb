@@ -3,7 +3,6 @@ require 'kconv'
 require "net/https"
 require 'open-uri'
 require 'pdf-reader'
-require 'poppler'
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 

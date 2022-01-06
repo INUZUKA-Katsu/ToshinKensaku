@@ -3,23 +3,7 @@ GEM
   specs:
     Ascii85 (1.1.0)
     afm (0.2.2)
-    cairo (1.17.5)
-      native-package-installer (>= 1.0.3)
-      pkg-config (>= 1.2.2)
-      red-colors
-    cairo-gobject (3.4.9)
-      cairo (>= 1.16.2)
-      glib2 (= 3.4.9)
-    gio2 (3.4.9)
-      gobject-introspection (= 3.4.9)
-    glib2 (3.4.9)
-      native-package-installer (>= 1.0.3)
-      pkg-config (>= 1.3.5)
-    gobject-introspection (3.4.9)
-      glib2 (= 3.4.9)
     hashery (2.1.2)
-    matrix (0.4.2)
-    native-package-installer (1.1.1)
     nio4r (2.5.8)
     pdf-reader (2.8.0)
       Ascii85 (~> 1.0)
@@ -27,15 +11,9 @@ GEM
       hashery (~> 2.0)
       ruby-rc4
       ttfunk
-    pkg-config (1.4.6)
-    poppler (3.4.9)
-      cairo-gobject (= 3.4.9)
-      gio2 (= 3.4.9)
     puma (5.5.2)
       nio4r (~> 2.0)
     rack (2.2.3)
-    red-colors (0.3.0)
-      matrix
     ruby-rc4 (0.1.5)
     ttfunk (1.7.0)
 
@@ -46,7 +24,6 @@ PLATFORMS
 
 DEPENDENCIES
   pdf-reader
-  poppler
   puma
   rack
 
