@@ -434,7 +434,8 @@ class Toshin
       #要求された語句を含むことを確認できたらパターンマッチしてマッチした部分を返す
       begin
       str_range = str.match(/#{reg_pattern(word_ary)}/m)[0]
-      str_range.scan(/[^\n]{0,100}#{word_ary.join("|")}(.*?#{word_ary.join("|")}[^\n]{0,100})?/).
+      #str_range.scan(/[^\n]{0,100}#{word_ary.join("|")}(.*?#{word_ary.join("|")}[^\n]{0,100})?/).
+      str_range.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/).
                 map do |s|
                   s.gsub!(/#{word_ary.join("|")}/,'<strong>\&</strong>')
                   s.chomp
@@ -461,10 +462,12 @@ class Toshin
   end
 end
 
-#toshin=Toshin.new
+toshin=Toshin.new
 # toshin.get_bango({:num => {:from => "1500",:to => "1700"},:iin=>"藤原"})
 #h=toshin.get_hinagata_data({:num => {:from => "150",:to => "2500"}})
-#p h
+h=toshin.get_hinagata_data({:freeWord => ["理由付記"],:freeWordType=>"and"})
+
+p h
 #p h["答申第1442号から第1444号まで"]
 
  
