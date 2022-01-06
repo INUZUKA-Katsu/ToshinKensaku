@@ -6,8 +6,10 @@ require 'uri'
 
 Encoding.default_external = "utf-8"
 
-#make_midashi_json
-FileUtils.cp(Dir.glob("text/*.*"),"tmp")
+until File.exist? "tmp/bango_hizuke_kikan.json"
+  FileUtils.cp(Dir.glob("text/*.*"),"tmp")
+  p "copied text_file to tmp"
+end
 
 class ToshinApp
   #初期設定
