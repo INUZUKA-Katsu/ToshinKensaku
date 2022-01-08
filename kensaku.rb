@@ -344,8 +344,12 @@ class Toshin
     i=0
     selected.each do |h|
       file_name = h[:file_name]
-      p file_name
-      str = File.read(file_name).encode("UTF-8", :invalid => :replace)
+      begin
+        str = File.read(file_name).encode("UTF-8", :invalid => :replace)
+      rescue
+        p file_name + "の読み込みエラー"
+        str = " "
+      end
       matched_range = exec_search(str,word_ary,type,range_joken)
       if matched_range
         i+=1
