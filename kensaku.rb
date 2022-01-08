@@ -268,6 +268,7 @@ class Toshin
   def get_hinagata_data(joken)
     if joken.keys.include? :freeWord
       p :step1
+      puts File.read("tmp/答申第2199号から第2200号まで.txt")
       selected = freeWord_search(joken)
     else
       selected = search(joken)
