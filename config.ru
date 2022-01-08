@@ -26,12 +26,12 @@ class ToshinApp
     kensu = 0
     if req.post? and req.path=="/report/search"
       #Postリクエストのとき、Pyramid.rbのmainを実行する。
-      joken = main(param)
+      joken, j_str = main(param)
       #p "joken=>"+joken.to_s
       toshin = Toshin.new
       h = toshin.get_hinagata_data(joken)
       kensu = h.size
-      p "kensu => "+kensu.to_s
+      #p "kensu => "+kensu.to_s
       if kensu>0
         res = []
         if joken.keys.include? :freeWord
@@ -59,6 +59,7 @@ class ToshinApp
       end
       html.sub!(/<--検索条件-->/,JSON.generate(param))
       html.sub!(/<--結果件数-->/,kensu.to_s)
+      html.sub!(/<--検索条件-->/,j_str.to_a.map{|j| j.join(" => ")}.join("<br>"))
       header["Content-Type"]   = 'text/html'
       response                 = html
       #Heroku環境では市サイトから取得したファイルはtmpフォルダに保存するほかないが、

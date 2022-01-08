@@ -16,68 +16,103 @@ end
 def main(param)
   p param
   joken = Hash.new
+  j_str = Hash.new
   if param["searchQuery"]!=""
     joken[:freeWordRange] = ""
     joken[:freeWord] = param["searchQuery"].split(/\s+|　+/)
     joken[:freeWordType] = param["searchType"]
+    range = "答申全体"
   end
   if param["ketsuronSearchQuery"]!=""
     joken[:freeWordRange] = "ketsuron"
     joken[:freeWord] = param["ketsuronSearchQuery"].split(/\s+|　+/)
     joken[:freeWordType] = param["ketsuronSearchType"]
+    range = "審査会の結論"
   end
   if param["seikyuninSearchQuery"]!=""
     joken[:freeWordRange] = "seikyunin"
     joken[:freeWord] = param["seikyuninSearchQuery"].split(/\s+|　+/)
     joken[:freeWordType] = param["seikyuninSearchType"]
+    range = "審査請求人の意見"
   end
   if param["jisshikikanSearchQuery"]!=""
     joken[:freeWordRange] = "jisshikikan"
     joken[:freeWord] = param["jisshikikanSearchQuery"].split(/\s+|　+/)
     joken[:freeWordType] = param["jisshikikanSearchType"]
+    range = "実施機関の説明"
   end
   if param["shinsakaiSearchQuery"]!=""
     joken[:freeWordRange] = "shinsakai"
     joken[:freeWord] = param["shinsakaiSearchQuery"].split(/\s+|　+/)
     joken[:freeWordType] = param["shinsakaiSearchType"]
+    range = "審査会の判断"
   end
   if param["shinsakailastSearchQuery"]!=""
     joken[:freeWordRange] = "shinsakailast"
     joken[:freeWord] = param["shinsakailastSearchQuery"].split(/\s+|　+/)
     joken[:freeWordType] = param["shinsakailastSearchType"]
+    range = "審査会の判断の結論部分"
   end
+  if joken[:freeWordType]=="and"
+    j_str[range]= joken[:freeWord].map{|w| '"'+w+'"'}.join(" かつ ")
+  elsif joken[:freeWordType]=="or"
+    j_str[range]= joken[:freeWord].map{|w| '"'+w+'"'}.join(" 又は ")
+  end
+  
   if param["johoKokai"]=="on" and param["kojinjohoHogo"]==nil
     joken[:jorei] = "情報公開"
+    j_str["条例"] = "情報公開"
   elsif param["johoKokai"]==nil and param["kojinjohoHogo"]=="on"
     joken[:jorei] = "個人情報"
+    j_str["条例"] = "個人情報"
   elsif param["johoKokai"]==nil and param["kojinjohoHogo"]==nil
     joken[:jorei] = ""
+    j_str["条例"] = "なし"
   end
+  
   joken[:seikyu] = ""
+  seikyu = []
   if param["kaijiSeikyu"]=="on"
     joken[:seikyu] += "開示請求"
+    seikyu << "開示請求"
   end
   if param["teiseiSeikyu"]=="on"
     joken[:seikyu] += "訂正請求"
+    seikyu << "訂正請求"
   end
   if param["teishiSeikyu"]=="on"
     joken[:seikyu] += "利用停止請求"
+    seikyu << "利用停止請求"
   end
+  j_str["請求"] = seikyu.join(",")
+  
+  bukai = []
   if param["bukai"]!=""
     joken[:bukai] = param["bukai"]
+    bukai << joken[:bukai]
   end
   if param["bukaiSearchQuery"]!=""
     joken[:bukaiQuery] = param["bukaiSearchQuery"].split(/\s+|　+/)
+    bukai += joken[:bukaiQuery]
   end
+  j_str["部会"] = bukai.join(",") unless bukai==[]
+
   if param["iinSearchQuery"]!=""
     joken[:iinQuery] = param["iinSearchQuery"].split(/\s+|　+/)
+    j_str["審査会委員"] = joken[:iinQuery].join(",")
   end
+  
+  kikan = []
   if param["jisshiKikan"]!=""
     joken[:kikan] = param["jisshiKikan"]
+    kikan << joken[:kikan]
   end
   if param["jisshiaKikanQuery"]!=""
     joken[:kikanQuery] = param["jisshiaKikanQuery"].split(/\s+|　+/)
+    kikan += joken[:kikanQuery]
   end
+  j_str["実施機関"]=kikan.join(",") unless kikan==[]
+
   if param["reportDateFromYear"]!=""
     gen   = param["reportDateFromEra"]
     y     = param["reportDateFromYear"]
@@ -86,49 +121,64 @@ def main(param)
     range = param["reportDateRange"]
     if gen=="heisei"
       yyyy = y.to_i+1988
+      j_str["答申日"] = "平成#{y}年"
     else
       yyyy = y.to_i+2018
+      j_str["答申日"] = "令和#{y}年"
     end
     if m==""
       yyyymm = yyyy.to_s+"01"
+      j_str["答申日"]+="1月"
     else
       yyyymm = yyyy.to_s+("0"+m)[-2,2]
+      j_str["答申日"]+="#{m}月"
     end
     if d==""
       yyyymmdd = yyyymm.to_s+"01"
+      j_str["答申日"]+="1日"
     else
       yyyymmdd = yyyymm.to_s+("0"+d)[-2,2]
+      j_str["答申日"]+="#{d}日"
     end
     if range=="kan" or range=="go"
       joken[:yyyymmdd] = {:from => yyyymmdd}
+      j_str["答申日"]+=" 〜 "
     elsif range=="zen"
       joken[:yyyymmdd] = {:to => yyyymmdd}
+      j_str["答申日"] = " 〜 " + j_str["答申日"]
     elsif range==""
       joken[:yyyymmdd] = yyyymmdd
     end
   end
+
   if param["reportDateToYear"]!=""
-    range = param["reportDateFromRange"]
+    range = param["reportDateRange"]
     # rangeが "〜" 以外のときは右側の日付が入力されていても無視する。
     if range=="kan"
       gen   = param["reportDateToEra"]
       y     = param["reportDateToYear"]
       m     = param["reportDateToMonth"]
-      d     = param["reportDateToDay"]
+      d     = param["reportDateToDate"]
       if gen=="heisei"
         yyyy = y.to_i+1988
+        j_str["答申日"] += "平成#{y}年"
       else
         yyyy = y.to_i+2018
+        j_str["答申日"] += "令和#{y}年"
       end
       if m==""
-        yyyymm = yyyy.to_s+"01"
+        yyyymm = yyyy.to_s+"12"
+        j_str["答申日"]+="12月"
       else
         yyyymm = yyyy.to_s+("0"+m)[-2,2]
+        j_str["答申日"]+="#{m}月"
       end
       if d==""
-        yyyymmdd = yyyymm.to_s+"01"
+        yyyymmdd = yyyymm.to_s+"1"
+        j_str["答申日"]+="1日"
       else
         yyyymmdd = yyyymm.to_s+("0"+d)[-2,2]
+        j_str["答申日"]+="#{d}日"
       end
       joken[:yyyymmdd][:to] = yyyymmdd
     end
@@ -136,12 +186,17 @@ def main(param)
   if param["reportNoFromNo"]!=""
   	num = param["reportNoFromNo"]
     range = param["reportNoRange"]
+    
     if range=="go" or range=="kan"
       joken[:num]={:from => num}
+      j_str["答申番号"] = "第#{num}号〜"
+    
     elsif range=="zen"
       joken[:num]={:to => num}
+      j_str["答申番号"] = "〜第#{num}号"
     else
       joken[:num]=num
+      j_str["答申番号"] = "第#{num}号"
     end
   end
   if param["reportNoToNo"]!=""
@@ -149,9 +204,10 @@ def main(param)
     range = param["reportNoRange"]
     if range=="kan"
       joken[:num][:to]=num
+      j_str["答申番号"] += "〜第#{num}号"
     end
   end
-  joken
+  [ joken, j_str ]
 end
 
 class Toshin
@@ -162,13 +218,13 @@ class Toshin
     selected = @midashi
     if joken.keys.include? :jorei
        selected = selected.select{|h|
-         p "h[:jorei].include?(joken[:jorei]) => " + h[:jorei] + " include? " + joken[:jorei]
+         #p "h[:jorei].include?(joken[:jorei]) => " + h[:jorei] + " include? " + joken[:jorei]
          joken[:jorei].include?(h[:jorei])
        }
     end
     if joken.keys.include? :seikyu and joken[:seikyu] != "開示請求訂正請求利用停止請求"
        selected = selected.select{|h|
-         p "joken[:seikyu].include?(h[:seikyu]) => " + joken[:seikyu] + " include? " + h[:seikyu]
+         #p "joken[:seikyu].include?(h[:seikyu]) => " + joken[:seikyu] + " include? " + h[:seikyu]
          h[:seikyu]!="" and joken[:seikyu].include?(h[:seikyu])
        }
     end
@@ -293,7 +349,7 @@ class Toshin
       when "jisshikikan"  ;  "理由説明要旨.*?(?=((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見)"
       when "seikyunin"    ;  "((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?(?=審査会の判断)"
       when "shinsakai"    ;  '審査会の判断.*'
-      when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)+結論)(.*?(^( |　)*別表|別表[0-9０-９]*( |　)*$|別( |　)+表|審査会の経過)|.*)'
+      when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)*結論)(.*?(^( |　)*別表|別表[0-9０-９]*( |　)*$|別( |　)+表|審査会の経過)|.*)'
       else  nil
       end
     end
