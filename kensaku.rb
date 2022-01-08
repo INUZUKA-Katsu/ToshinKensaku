@@ -267,6 +267,7 @@ class Toshin
   end
   def get_hinagata_data(joken)
     if joken.keys.include? :freeWord
+      p :step1
       selected = freeWord_search(joken)
     else
       selected = search(joken)
@@ -304,7 +305,7 @@ class Toshin
     def exec_search(str,word_ary,type,range_joken)
       if range_joken and ans = str.match(/#{range_joken}/m)
         str = ans[0]
-        p str
+        #p str
       end
       case type
       when "and"
@@ -321,6 +322,7 @@ class Toshin
         return nil unless res
       end
       #要求された語句を含むことを確認できたらパターンマッチしてマッチした部分を返す
+      p :step4
       begin
       str_range = str.match(/#{reg_pattern(word_ary)}/m)[0]
       #str_range.scan(/[^\n]{0,100}#{word_ary.join("|")}(.*?#{word_ary.join("|")}[^\n]{0,100})?/).
@@ -338,11 +340,16 @@ class Toshin
     word_ary,type,range_joken = joken[:freeWord],joken[:freeWordType],text_range(joken)
     res = Array.new
     selected = search(joken)
+    p :step2
+    i=0
     selected.each do |h|
       file_name = h[:file_name]
+      p file_name
       str = File.read(file_name).encode("UTF-8", :invalid => :replace)
       matched_range = exec_search(str,word_ary,type,range_joken)
       if matched_range
+        i+=1
+        p i
         h[:matched_range] = matched_range
         res << h
       end
