@@ -7,10 +7,7 @@ Encoding.default_external = "utf-8"
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 
-until File.exist? "tmp/bango_hizuke_kikan.json"
-  FileUtils.cp(Dir.glob("text/*.*"),"tmp")
-  p "copied text_file to tmp"
-end
+FileUtils.cp(Dir.glob("text/*.*"),"tmp")
 
 class ToshinApp
   #初期設定
@@ -72,7 +69,10 @@ class ToshinApp
     elsif req.post? and param.keys.include? "joken"
       header["Content-Type"] = 'text/html'
       response               = get_index(param)
-
+    #elsif req.path.include? ".css" or req.path.include? ".js"
+    #  header["Content-Type"] = get_type(req.path)
+    #  p req.path
+    #  response               = File.read(req.path[2,-1]) #左端の"/"をはずす。
     else
       header["Content-Type"] = 'text/html'        
       response               = File.read('index.html')
@@ -102,7 +102,7 @@ class ToshinApp
     end
   end
 end
-#use Rack::Static, :urls => ['/index.html','/js','/css','/image','/tmp'], :root => '.'
+use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
 #use Rack::Static, :urls => ['/index.html','/js','/css','/image','/tmp'], :root => '.'
 #use Rack::Static, :urls => {'/'=>'index.html'}, :root => '.'
 
