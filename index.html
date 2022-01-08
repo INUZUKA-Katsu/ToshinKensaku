@@ -5,9 +5,43 @@
 <meta charset="UTF-8">
 <title>横浜市情報公開・個人情報保護審査会答申データベース検索</title>
 <meta name="description" content="横浜市情報公開・個人情報保護審査会の答申を自在に検索することのできるサイトです。審査会の結論、審査会の判断など検索範囲を限定してのフリーワード検索のほか、処分の種類、実施機関名、答申番号、答申日などを組み合わせて検索可能。フリーワード検索では、検索結果画面に該当箇所を表示します。">
-<link rel="stylesheet" media="screen" href="./css/common.css"/>
-<link rel="stylesheet" media="screen" href="./css/bootstrap.css"/>
-
+<link rel="stylesheet" media="screen" href="/css/common.css"/>
+<link rel="stylesheet" media="screen" href="/css/bootstrap.css"/>
+<script type="text/javascript">
+  function form_reset(){
+    //document.forms[0].reset(); 検索結果から戻ったときはhtml自体を書き換えているので"form.reset"では元に戻せない。
+    var namesA = {"johoKokai":true, "kojinjohoHogo":true, "kaijiSeikyu":true, "teiseiSeikyu":false, "teishiSeikyu":false};
+    var namesB = ["searchType", "searchType", "ketsuronSearchType", "ketsuronSearchType", "seikyuninSearchType", "seikyuninSearchType", "jisshikikanSearchType", "jisshikikanSearchType", "shinsakaiSearchType", "shinsakaiSearchType", "shinsakailastSearchType", "shinsakailastSearchType"];
+    var namesC = ["bukai", "jisshiKikan", "reportDateFromEra", "reportDateRange", "reportDateToEra", "reportNoRange"];
+    var namesD = ["searchQuery", "ketsuronSearchQuery", "seikyuninSearchQuery", "jisshikikanSearchQuery", "shinsakaiSearchQuery", "shinsakailastSearchQuery", "bukaiSearchQuery", "iinSearchQuery", "jisshiaKikanQuery", "reportDateFromYear", "reportDateFromMonth", "reportDateFromDate", "reportDateToYear", "reportDateToMonth", "reportDateToDate", "reportNoFromNo", "reportNoToNo"];
+    for (var i in namesA){
+      var select=document.getElementsByName(i);
+      select[0].checked = namesA[i];
+    }
+    for (var i in namesB){
+      var select=document.getElementsByName(namesB[i]);
+      select[0].checked = true;
+    }
+    for (var i in namesC){
+      var select=document.getElementsByName(namesC[i]);
+      select[0].options[0].selected = true;
+    }
+    for (var i in namesD){
+      var select=document.getElementsByName(namesD[i]);
+      select[0].value = "";
+    }
+  }
+  function query_box_change(){
+    var qbox = ["searchQuery", "ketsuronSearchQuery", "seikyuninSearchQuery", "jisshikikanSearchQuery", "shinsakaiSearchQuery", "shinsakailastSearchQuery"];
+    var obj = event.target;
+    for(var i in qbox){
+      if(obj.id==qbox[i]){
+      }else{
+        document.getElementById(qbox[i]).value = "";
+      }
+    }
+  }
+</script>
 </head>
 <body data-spy="scroll">
 	<div id="wrap" class="root">
@@ -22,17 +56,13 @@
 		<div id="container-wrap">
 			<div class="container">
 				<div id="content">
-					
-					
-					
 
 		<div class="header-text">
 			<font color="#336699">本システムは、公開されているPDFデータを元に、横浜市情報公開・個人情報保護審査会の答申内容を検索できるようにしたものです。</font>
 		</div>
 
 		<div class="middle-spacer"></div>
-
-		<form name="reportActionForm" method="post" action="">
+		<form name="reportActionForm" method="post" action="/report/search">
 			<table class="search-form">
 				<tr>
 					<td class="form-header">
@@ -47,7 +77,7 @@
 								<td><input type="checkbox" name="kojinjohoHogo" value="on" checked="checked" class="checkbox">個人情報保護条例</td>
 							</tr>
 						</table>
-						<div class="search-hint">複数の選択が可能です。必ず１つ以上選択して下さい。</div>
+						<div class="search-hint">複数の選択が可能です。必ずどちらかの項目を選択してください。</div>
 					</td>
 				</tr>
 			</table>
@@ -62,7 +92,7 @@
 					<td class="form-contents">
 						<table class="search-form-inner">
 							<tr>
-								<td><input type="checkbox" name="kaijiSeikyu" value="on" class="checkbox">開示請求</td>
+								<td><input type="checkbox" name="kaijiSeikyu" value="on" checked="checked" class="checkbox">開示請求</td>
 								<td width="10"><br></td>
 								<td><input type="checkbox" name="teiseiSeikyu" value="on" class="checkbox">訂正請求</td>
 								<td width="10"><br></td>
@@ -70,8 +100,7 @@
 							</tr>
 						</table>
 						<div class="search-hint">
-							複数の選択が可能です。個人情報保護条例を検索する場合は１つ以上選択して下さい。<br>
-							情報公開条例を検索する場合は選択する必要はありません。
+							複数の選択が可能です。少なくとも一つの項目を選択する必要があります。
 						</div>
 					</td>
 				</tr>
@@ -91,7 +120,7 @@
 								<td><input type="radio" name="searchType" value="or" class="radio">以下の語句を一つ以上含む</td>
 							</tr>
 						</table>
-						<input type="text" name="searchQuery" value="" class="xlarge">
+						<input type="text" name="searchQuery" value="" class="xlarge" id="searchQuery" onChange="query_box_change();">
 						<div class="search-hint">複数の語句が指定可能です。（スペース区切り：全半角不問）</div>
 					</td>
 				</tr>
@@ -117,7 +146,7 @@
 								<td><input type="radio" name="ketsuronSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
 							</tr>
 						</table>
-						<input type="text" name="ketsuronSearchQuery" value="" class="xlarge">
+						<input type="text" name="ketsuronSearchQuery" value="" class="xlarge" id="ketsuronSearchQuery" onChange="query_box_change();">
 						<div class="search-hint">複数の語句が指定可能です。（スペース区切り：全半角不問）　以下同じ。</div>
 
 						<table class="search-form-inner">
@@ -131,7 +160,7 @@
 								<td><input type="radio" name="seikyuninSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
 							</tr>
 						</table>
-						<input type="text" name="seikyuninSearchQuery" value="" class="xlarge">
+						<input type="text" name="seikyuninSearchQuery" value="" class="xlarge" id="seikyuninSearchQuery" onChange="query_box_change();">
 						<div class="middle-spacer"></div>
 
 						<table class="search-form-inner">
@@ -145,7 +174,7 @@
 								<td><input type="radio" name="jisshikikanSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
 							</tr>
 						</table>
-						<input type="text" name="jisshikikanSearchQuery" value="" class="xlarge">
+						<input type="text" name="jisshikikanSearchQuery" value="" class="xlarge" id="jisshikikanSearchQuery" onChange="query_box_change();">
 						<div class="middle-spacer"></div>
 						<table class="search-form-inner">
 							<tr>
@@ -158,7 +187,7 @@
 								<td><input type="radio" name="shinsakaiSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
 							</tr>
 						</table>
-						<input type="text" name="shinsakaiSearchQuery" value="" class="xlarge">
+						<input type="text" name="shinsakaiSearchQuery" value="" class="xlarge" id="shinsakaiSearchQuery" onChange="query_box_change();">
 						<div class="middle-spacer"></div>
 						<table class="search-form-inner">
 							<tr>
@@ -172,7 +201,7 @@
 								<td><input type="radio" name="shinsakailastSearchType" value="or" class="radio">以下の語句を一つ以上含む</td>
 							</tr>
 						</table>
-						<input type="text" name="shinsakailastSearchQuery" value="" class="xlarge">
+						<input type="text" name="shinsakailastSearchQuery" value="" class="xlarge" id="shinsakailastSearchQuery" onChange="query_box_change();">
 
 						<div class="middle-spacer"></div>
 
@@ -186,7 +215,7 @@
 				<tr>
 					<td class="buttons">
 						<input type="submit" value="検索" class="button">
-						<input type="reset" value="クリア" class="button">
+						<input type="button" value="クリア" class="button" onclick="form_reset();">
 					</td>
 				</tr>
 			</table>
@@ -312,9 +341,9 @@
 											<option value="reiwa">令和</option>
 										
 											<option value="heisei">平成</option></select>
-									<input type="text" name="reportDateFromYear" maxlength="2" value="" class="len2">年
-									<input type="text" name="reportDateFromMonth" maxlength="2" value="" class="len2">月
-									<input type="text" name="reportDateFromDate" maxlength="2" value="" class="len2">日
+									<input type="text" name="reportDateFromYear" value="" maxlength="2" class="len2">年
+									<input type="text" name="reportDateFromMonth" value="" maxlength="2" class="len2">月
+									<input type="text" name="reportDateFromDate" value="" maxlength="2" class="len2">日
 									<select name="reportDateRange" class="mini"><option value=""></option>
 										
 											<option value="kan">～</option>
@@ -327,9 +356,9 @@
 											<option value="reiwa">令和</option>
 										
 											<option value="heisei">平成</option></select>
-									<input type="text" name="reportDateToYear" maxlength="2" value="" class="len2">年
-									<input type="text" name="reportDateToMonth" maxlength="2" value="" class="len2">月
-									<input type="text" name="reportDateToDate" maxlength="2" value="" class="len2">日
+									<input type="text" name="reportDateToYear" value="" maxlength="2" class="len2">年
+									<input type="text" name="reportDateToMonth" value="" maxlength="2" class="len2">月
+									<input type="text" name="reportDateToDate" value="" maxlength="2" class="len2">日
 								</td>
 							</tr>
 						</table>
@@ -349,14 +378,14 @@
 						<table class="search-form-inner">
 							<tr>
 								<td>
-									<input type="text" name="reportNoFromNo" maxlength="6" value="" class="len6">号
+									<input type="text" name="reportNoFromNo" value="" maxlength="6" class="len6">号
 									<select name="reportNoRange" class="mini"><option value=""></option>										
 											<option value="kan">～</option>
 										
 											<option value="zen">以前</option>
 										
 											<option value="go">以降</option></select>
-									<input type="text" name="reportNoToNo" maxlength="6" value="" class="len6">号
+									<input type="text" name="reportNoToNo" value="" maxlength="6" class="len6">号
 								</td>
 							</tr>
 						</table>
@@ -371,7 +400,7 @@
 				<tr>
 					<td class="buttons">
 						<input type="submit" value="検索" class="button">
-						<input type="reset" value="クリア" class="button">
+						<input type="button" value="クリア" class="button" onclick="form_reset();">
 					</td>
 				</tr>
 			</table>
@@ -394,13 +423,19 @@
 							<td width="20" valign="top"><div align="right">
 									<font class="footerInfoMark">●</font>
 								</div></td>
-							<td><font class="footerInfo">検索ボタンをクリックすると、指定した条件で検索を行います。用語検索と詳細用語検索はどれかひとつの入力欄に用語を入力して検索してください。複数の入力欄に用語を入力した場合は、一番下の入力欄だけが有効となります。</font></td>
+							<td><font class="footerInfo">検索ボタンをクリックすると、指定した条件で検索を行います。検索ボタンは２つありますが、どちらをクリックしても同じです。</font></td>
 						</tr>
 						<tr>
 							<td width="20" valign="top"><div align="right">
 									<font class="footerInfoMark">●</font>
 								</div></td>
-							<td><font class="footerInfo">条件は組み合わせて指定できます。（用語検索と詳細用語検索、詳細用語検索間では複数条件を指定できませんが、用語検索・詳細用語検索と他の条件は組み合わせることができます。）</font></td>
+							<td><font class="footerInfo">条件は組み合わせて指定できます。</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">ただし、用語検索・詳細用語検索はどれかひとつの入力欄だけに入力できます。複数の欄に入力しようとすると以前に入力した内容は消去されます。用語検索・詳細用語検索とそれ以外の条件とは組み合わせることができます。</font></td>
 						</tr>
 						<tr>
 							<td width="20" valign="top"><div align="right">

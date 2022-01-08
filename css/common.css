@@ -435,3 +435,6 @@ hr {
 	border-color: rgb(200, 200, 200);
 }
 
+div.right{
+	float:right;
+}

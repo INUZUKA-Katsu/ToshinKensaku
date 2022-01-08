@@ -6,8 +6,13 @@
 <link rel="shortcut icon" type="image/x-icon" href="/images/favicon.ico"/>
 <link rel="stylesheet" media="screen" href="/css/common.css"/>
 <link rel="stylesheet" media="screen" href="/css/bootstrap.css"/>
+<style type="text/css">
+  div.right{ float:right;}
+</style>
 </head>
 <body data-spy="scroll">
+	<form method="post" action="/">
+	<input type="hidden" name="joken" value='<--検索条件-->'>
 	<div id="wrap" class="root">
 		<header class="header">
 			<div class="container header">
@@ -20,16 +25,14 @@
 		<div id="container-wrap">
 			<div class="container">
 				<div id="content">
-					<h3>検索結果</h3>
+					<h3>検索結果 <--結果件数-->件</h3>
 					<div class="spacer"></div>
 					<--検索結果-->
-					<div class="spacer"></div>
-					<div class="middle-spacer"></div>
-					<a href="/">戻る</a>
 					<div class="middle-spacer"></div>
 				</div>
 			</div>
 		</div>
 	</div>
+	</form>
 </body>
 </html>

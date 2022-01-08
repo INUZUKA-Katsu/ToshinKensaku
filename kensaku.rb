@@ -4,8 +4,15 @@ require "net/https"
 require 'open-uri'
 require 'pdf-reader'
 
-URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
-
+class Hash
+  def key_to_sym()
+    new_h = Hash.new
+    self.keys.each do |k|
+      new_h[k.to_sym]=self[k]
+    end
+    new_h
+  end
+end
 def main(param)
   p param
   joken = Hash.new
@@ -43,16 +50,18 @@ def main(param)
     joken[:jorei] = "情報公開"
   elsif param["johoKokai"]==nil and param["kojinjohoHogo"]=="on"
     joken[:jorei] = "個人情報"
-    joken[:seikyu] = ""
-    if param["kaijiSeikyu"]=="on"
-      joken[:seikyu] += "開示請求"
-    end
-    if param["teiseiSeikyu"]=="on"
-      joken[:seikyu] += "訂正請求"
-    end
-    if param["teishiSeikyu"]=="on"
-      joken[:seikyu] += "利用停止請求"
-    end
+  elsif param["johoKokai"]==nil and param["kojinjohoHogo"]==nil
+    joken[:jorei] = ""
+  end
+  joken[:seikyu] = ""
+  if param["kaijiSeikyu"]=="on"
+    joken[:seikyu] += "開示請求"
+  end
+  if param["teiseiSeikyu"]=="on"
+    joken[:seikyu] += "訂正請求"
+  end
+  if param["teishiSeikyu"]=="on"
+    joken[:seikyu] += "利用停止請求"
   end
   if param["bukai"]!=""
     joken[:bukai] = param["bukai"]
@@ -145,189 +154,74 @@ def main(param)
   joken
 end
 
-class String
-  def to_yyyymmdd
-    ary = self.scan(/(令和|平成)(.*)年(.*)月(.*)日/)[0]
-    return self unless ary
-    ary[1].sub(/元/,"1") 
-    case ary[0]
-    when "平成"; str = (ary[1].to_i + 1988).to_s + ("0"+ary[2])[-2,2] + ("0"+ary[3])[-2,2]
-    when "令和"; str = (ary[1].to_i + 2018).to_s + ("0"+ary[2])[-2,2] + ("0"+ary[3])[-2,2]
-    end
-    str
-  end
-end
-
-def change_encoding
-  Dir.chdir(__dir__)
-  Dir.glob("./tmp/答申*txt").each do |f|
-    str = File.read(f)
-    unless Kconv.guess(str)==Kconv::UTF8
-      File.write(f, str.toutf8)
-    end
-  end
-end
-#change_encoding
-def get_bango_url_kenmei
-  uri = URI.parse(URL)
-  url_list = uri.read.scan(/href="(.*?\.html)">.*?審査会答申一覧/).flatten
-  host = uri.host
-  
-  toshin_url = {}
-  toshin_kenmei = {}
-  
-  url_list.each do |url|
-    uri =  URI.parse("https://"+host+url)
-    url_bango_kenmei_array = uri.read.scan(/<li>(<a.*?)<br>(.*?)<\/li>/i)
-    url_bango_kenmei_array.each do |url_bango_kenmei|
-      url_bango = url_bango_kenmei[0]
-      kenmei    = url_bango_kenmei[1]
-      url_bango.scan(/<a href="(.*?pdf)".*?(答申第.*?号(?!から)(まで)?)/).each do |u_b|
-        if ans = u_b[1].tr("０-９","0-9").match(/\d+/)
-          num = ans[0]
-        else
-          p "u_b[1] => "+u_b[1].to_s
-        end
-        toshin_url[num] = u_b[0]
-        toshin_kenmei[num] = kenmei
-      end
-    end
-  end
-  [toshin_url,toshin_kenmei]
-end
-def get_num_array_from(bango)
-   if bango.match(/から/)
-     res = bango.match(/(\d+)号から.*?(\d+)/)
-     n = []
-     (res[1].to_i..res[2].to_i).each do |num|
-       n << num.to_s 
-     end
-     return n
-   elsif bango.match(/及び/)
-     res = bango.match(/(\d+)号及び.*?(\d+)/)
-     return [ res[1], res[2] ]
-   else
-     res = bango.match(/\d+/)
-     return [ res[0] ]
-   end
-end
-def get_midashi_data_from(text_file)
-  str = File.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
-  begin
-    if ans1 = str.match(/.*様(?=横浜市情報公開・個人情報保護審査会会長|横浜市公文書公開審査会会長)/)
-      item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)](..元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
-      bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[2]        
-      jisshikikan = jisshikikan.gsub(/市長|議長|水道事業管理者|病院事業管理者|交通事業管理者|選挙管理委員会委員長|人事委員会委員長|監査委員|農業委員会会長|固定資産評価審査委員会委員長|理事長/,'\0 ').gsub(/様/,', ') 
-    end
-    if ans2 = str.match(/[\(（回]([^\(（)回]*?部会)[\)）]/)
-      bukai = ans2[1]
-    else
-      bukai = ""
-    end
-    if ans3 = str.match(/(?<=部会[\)）]).{1,50}委員.{1,8}?(?=(\-\d|\(|（|《参考》|別表|別紙))/)
-      iin = ans3[0].gsub(/委員/,'\0 ')
-    else
-      iin = ""
-    end
-    if ans4 = str.match(/横浜市[^市]*?条例/)
-      if ans4[0].include? "公開"
-        jorei = "情報公開"
-        seikyu = "開示請求"
-      elsif ans4[0].include? "個人情報"
-        jorei = "個人情報"
-        if ans5 = str.match(/訂正決定|利用停止決定|開示決定/)
-          case ans5[0]
-          when "訂正決定"    ; seikyu = "訂正請求"
-          when "利用停止決定" ; seikyu = "利用停止請求"
-          when "開示決定"    ; seikyu = "開示請求"
-          else ; seikyu = ""
-          end
-        else
-          seikyu = ""
-        end
-      else
-        jorei = ""
-      end
-    else
-      jorei = ""
-    end
-  rescue
-    p str
-  end
-  [ bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu ]
-end
-def make_midashi_json
-  num2url, num2kenmei = get_bango_url_kenmei
-  ary=[]
-  Dir.glob("tmp/答申*txt").each do |f|
-    bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu = get_midashi_data_from(f)
-    num_array = get_num_array_from(bango)
-    num       = num_array[0]
-    ary << [ num_array,bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu,f,num2kenmei[num],num2url[num] ]
-  end
-  ary = ary.sort_by{|a| a[0][0].to_i}
-  File.write("tmp/bango_hizuke_kikan.json",JSON.generate(ary))
-  FileUtils.cp("tmp/bango_hizuke_kikan.json","text/bango_hizuke_kikan.json") #Heroku上では無効
-  return ary
-end
-#make_midashi_json
-
 class Toshin
   def initialize
-    @ary = JSON.parse(File.read("tmp/bango_hizuke_kikan.json"))
+    @midashi = JSON.parse(File.read("tmp/bango_hizuke_kikan.json")).map{|h| h.key_to_sym}
   end
   def search(joken) #jokenはハッシュ
-    selected = @ary
+    selected = @midashi
+    if joken.keys.include? :jorei
+       selected = selected.select{|h|
+         p "h[:jorei].include?(joken[:jorei]) => " + h[:jorei] + " include? " + joken[:jorei]
+         joken[:jorei].include?(h[:jorei])
+       }
+    end
+    if joken.keys.include? :seikyu and joken[:seikyu] != "開示請求訂正請求利用停止請求"
+       selected = selected.select{|h|
+         p "joken[:seikyu].include?(h[:seikyu]) => " + joken[:seikyu] + " include? " + h[:seikyu]
+         h[:seikyu]!="" and joken[:seikyu].include?(h[:seikyu])
+       }
+    end
     if joken.keys.include? :num
        if joken[:num].class==String
-         selected = selected.select{|t| t[0].include?(joken[:num])}
+         selected = selected.select{|h| h[:num_array].include?(joken[:num])}
        elsif joken[:num].class==Hash
-         h = joken[:num]
-         if h.keys.size==2
+         j = joken[:num]
+         if j.keys.size==2
            a = []
-           (h[:from]..h[:to]).each{|n| a<<n}
-           selected = selected.select{|t| (t[0] & a).size>0 }
-         elsif h.keys[0]==:from
-           selected = selected.select{|t| h[:from].to_i <= t[0].max.to_i }
-         elsif h.keys[0]==:to
-           selected = selected.select{|t| h[:to].to_i >= t[0].min.to_i }
+           (j[:from]..j[:to]).each{|n| a<<n}
+           selected = selected.select{|h| (h[:num_array] & a).size>0 }
+         elsif j.keys[0]==:from
+           selected = selected.select{|h| j[:from].to_i <= h[:num_array].max.to_i }
+         elsif j.keys[0]==:to
+           selected = selected.select{|h| j[:to].to_i >= h[:num_array].min.to_i }
          end
        end
     end
     if joken.keys.include? :bango
-       selected = selected.select{|t| t[1].include?(joken[:bango])}
+       selected = selected.select{|h| h[:bango].include?(joken[:bango])}
     end
     if joken.keys.include? :yyyymmdd
        if joken[:yyyymmdd].class==String
-         selected = selected.select{|t| t[2].include?(joken[:yyyymmdd])}
+         selected = selected.select{|h| h[:yyyymmdd].include?(joken[:yyyymmdd])}
        elsif joken[:yyyymmdd].class==Hash
-         h = joken[:yyyymmdd]
-         if h.keys.size==2
-           selected = selected.select{|t| (h[:from]..h[:to]).include?(t[2])}
-         elsif h.keys[0]==:from
-           selected = selected.select{|t| h[:from] <= t[2]}
-         elsif h.keys[0]==:to
-           selected = selected.select{|t| h[:to] >= t[2]}
+         j = joken[:yyyymmdd]
+         if j.keys.size==2
+           selected = selected.select{|h| (j[:from]..h[:to]).include?(h[:yyyymmdd])}
+         elsif j.keys[0]==:from
+           selected = selected.select{|h| j[:from] <= h[:yyyymmdd]}
+         elsif j.keys[0]==:to
+           selected = selected.select{|h| j[:to] >= h[:yyyymmdd]}
          end
        end
     end
     if joken.keys.include? :toshinbi
-       selected = selected.select{|t| t[3].include?(joken[:toshinbi])}
+       selected = selected.select{|h| h[:toshinbi].include?(joken[:toshinbi])}
     end
     if joken.keys.include? :kikan
-       selected = selected.select{|t| t[4].include?(joken[:kikan])}
+       selected = selected.select{|h| h[:jisshikikan].include?(joken[:kikan])}
     end
     if joken.keys.include? :kikanQuery
        joken[:kikanQuery].each do |k|
-         selected = selected.select{|t| t[4].include?(k)}
+         selected = selected.select{|h| h[:jisshikikan].include?(k)}
        end
     end
     if joken.keys.include? :bukai
-       selected = selected.select{|t| t[5].include?(joken[:bukai])}
+       selected = selected.select{|h| h[:bukai].include?(joken[:bukai])}
     end
     if joken.keys.include? :bukaiQuery
        ary = []
-       selected_ary = joken[:bukaiQuery].map{|bukai| selected.select{|t| t[5].include? bukai}}
+       selected_ary = joken[:bukaiQuery].map{|bukai| selected.select{|h| h[:bukai].include? bukai}}
        selected_ary.each do |selected|
          ary =  ary | selected
        end
@@ -335,73 +229,68 @@ class Toshin
     end
     if joken.keys.include? :iinQuery
        ary = []
-       selected_ary = joken[:iinQuery].map{|iin| selected.select{|t| t[6].include? iin}}
+       selected_ary = joken[:iinQuery].map{|iin| selected.select{|h| h[:iin].include? iin}}
        selected_ary.each do |selected|
          ary =  ary | selected
        end
        selected = ary
     end
-    if joken.keys.include? :jorei
-       selected = selected.select{|t| t[7].include?(joken[:jorei])}
-    end
-    if joken.keys.include? :seikyu and joken[:seikyu] != "開示請求訂正請求利用停止請求"
-       selected = selected.select{|t| t[8]!="" and joken[:seikyu].include?(t[8])}
-    end
     selected
   end
   def get_url(joken)
-  	search(joken).map{|i| i[-1]}
+  	search(joken).map{|h| h[:url]}
   end
   def get_bango(joken="")
     if joken == ""
-      @ary.map{|i| i[1]}
+      @midashi.map{|h| h[:bango]}
     else
-      search(joken).map{|i| i[1]}
+      search(joken).map{|h| h[:bango]}
     end
   end
   def get_toshinbi(bango)
-    @ary.find{|data| data[1]==bango}[3]
+    @midashi.find{|h| h[:bango]==bango}[:toshinbi]
   end
   def get_jisshikikan(bango)
-    @ary.find{|data| data[1]==bango}[4]
+    @midashi.find{|h| h[:bango]==bango}[:jisshikikan]
   end
   def get_bukai(bango)
-    @ary.find{|data| data[1]==bango}[5]
+    @midashi.find{|h| h[:bango]==bango}[:bukai]
   end
   def get_file_name(bango)
-    @ary.find{|data| data[1]==bango}[-3]
+    @midashi.find{|h| h[:bango]==bango}[:file_name]
   end
   def get_kenmei(bango)
-    @ary.find{|data| data[1]==bango}[-2]
+    @midashi.find{|h| h[:bango]==bango}[:kenmei]
   end
   def get_url(bango)
-    @ary.find{|data| data[1]==bango}[-1]
+    @midashi.find{|h| h[:bango]==bango}[:url]
   end
   def get_hinagata_data(joken)
-    h = Hash.new
-    search(joken).each do |i|
-      h[i[1]] = {:toshinbi=>i[3],:jisshikikan=>i[4],:bukai=>i[5],:kenmei=>i[-2],:url=>i[-1]}
-    end
     if joken.keys.include? :freeWord
-      h2 = freeWord_search(joken)
-      h2.keys.each do |bango|
-        h2[bango][:toshinbi]=h[bango][:toshinbi]
-        h2[bango][:jisshikikan]=h[bango][:jisshikikan]
-        h2[bango][:bukai]=h[bango][:bukai]
-        h2[bango][:kenmei]=h[bango][:kenmei]
-        h2[bango][:url]=h[bango][:url]
-      end
-      return h2
+      selected = freeWord_search(joken)
+    else
+      selected = search(joken)
     end
-    h
+    res = Hash.new
+    selected.each do |h|
+      bango = h[:bango]
+      h.delete(:bango)
+      h.delete(:yyyymmdd)
+      h.delete(:file_name)
+      h.delete(:iin)
+      h.delete(:jorei)
+      h.delete(:seikyu)
+      res[bango] = h
+    end
+    res
   end
   def freeWord_search(joken)
     def text_range(joken)
       case joken[:freeWordRange]
       when ""             ;  nil
-      when "ketsuron"     ;  "審査会の結論.*?(申立て|審査請求|申出)の趣旨"
-      when "jisshikikan"  ;  "理由説明要旨.*?((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見"
-      when "seikyunin"    ;  "((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?審査会の判断"
+      when "ketsuron"     ;  "審査会の結論.*?(?=((異議)?申立て|審査請求|申出)の趣旨)"
+      when "jisshikikan"  ;  "理由説明要旨.*?(?=((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見)"
+      when "seikyunin"    ;  "((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?(?=審査会の判断)"
       when "shinsakai"    ;  '審査会の判断.*'
       when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)+結論)(.*?(^( |　)*別表|別表[0-9０-９]*( |　)*$|別( |　)+表|審査会の経過)|.*)'
       else  nil
@@ -446,28 +335,56 @@ class Toshin
         #p str
       end
     end
-    h2 = Hash.new
     word_ary,type,range_joken = joken[:freeWord],joken[:freeWordType],text_range(joken)
-    get_bango(joken).each do |bango|
-      str = File.read(get_file_name(bango)).encode("UTF-8", :invalid => :replace)
+    res = Array.new
+    selected = search(joken)
+    selected.each do |h|
+      file_name = h[:file_name]
+      str = File.read(file_name).encode("UTF-8", :invalid => :replace)
       matched_range = exec_search(str,word_ary,type,range_joken)
       if matched_range
-        #matched_range = matched_range[-800,800] if matched_range.size>800
-        #p bango
-        #p matched_range
-        h2[bango] = {:matched_range => matched_range} 
+        h[:matched_range] = matched_range
+        res << h
       end
     end
-    h2
+    res
   end
 end
 
-toshin=Toshin.new
+def get_index(param)
+  str = File.read("index.html")
+  return str unless param.keys.include? "joken"
+  h = JSON.parse(param["joken"])
+  ["johoKokai","kojinjohoHogo","kaijiSeikyu","teiseiSeikyu","teishiSeikyu"].each do |k|
+    if h.keys.include? k
+      str.sub!(/(#{k}.*)( checked="checked")?( class="checkbox">)/,'\1 checked="checked"\3')
+    else
+      str.sub!(/(#{k}.*?) checked="checked"/,'\1')
+    end
+  end
+  h.keys.each do |k|
+    case k
+    when "searchType","ketsuronSearchType","seikyuninSearchType","jisshikikanSearchType","shinsakaiSearchType","shinsakailastSearchType"
+      if h[k]=="or"
+        #p k
+        str.sub!(/("#{k}" value="and") checked="checked"/, '\1')
+        str.sub!(/("#{k}" value="or")/, '\1 checked="checked"')
+        #p str.match(/"#{k}" value="or".*/)[0]
+      end
+    when "bukai","jisshiKikan","reportDateFromEra","reportDateToEra","reportDateRange","reportNoRange"
+      str.sub!(/("#{h[k]}")>/, '\1 selected>') if h[k]!=""
+    when
+      str.sub!(/"#{k}"\s+value=""/, k+' value="'+h[k]+'"')
+    end
+  end
+  str
+end
+
+#toshin=Toshin.new
 # toshin.get_bango({:num => {:from => "1500",:to => "1700"},:iin=>"藤原"})
 #h=toshin.get_hinagata_data({:num => {:from => "150",:to => "2500"}})
-h=toshin.get_hinagata_data({:freeWord => ["理由付記"],:freeWordType=>"and"})
-
-p h
+#h=toshin.get_hinagata_data({:freeWord => ["理由付記"],:freeWordType=>"and"})
+#p h
 #p h["答申第1442号から第1444号まで"]
 
  

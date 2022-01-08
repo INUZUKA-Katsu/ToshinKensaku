@@ -5,6 +5,9 @@ HINAGATA=<<EOS
 						<td class="search-result-header-left" width="200px"><--NO--><br></td>
 						<td class="search-result-header-right" width="700px">
 							<a href="<--URL-->" class="btn btn-mini" target="_blank">本文表示</a>
+							<div class="right">
+								<input type="submit" value="戻る" class="btn btn-mini">
+							</div>
 						</td>
 					</tr>
 					<tr class="search-result-body">
