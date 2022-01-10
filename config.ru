@@ -1,5 +1,6 @@
 require_relative 'kensaku.rb'
 require_relative 'hinagata.rb'
+require_relative 'joho/soumu.rb'
 require 'cgi'
 require 'uri'
 
@@ -15,12 +16,12 @@ class ToshinApp
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
   	req     = Rack::Request.new(env)
-    #p "req.request_method => " + req.request_method
-    #p "req.query_string => " + req.query_string
-    #p "req.url => " + req.url
+    p "req.request_method => " + req.request_method
+    p "req.query_string => " + req.query_string
+    p "req.url => " + req.url
     #p "req.script_name => " + req.script_name
-    #p "req.fullpath => " + req.fullpath
-    #p "req.path => " + req.path
+    p "req.fullpath => " + req.fullpath
+    p "req.path => " + req.path
     param = req.POST()
     header  = Hash.new
     kensu = 0
@@ -74,6 +75,17 @@ class ToshinApp
     #  header["Content-Type"] = get_type(req.path)
     #  p req.path
     #  response               = File.read(req.path[2,-1]) #左端の"/"をはずす。
+    elsif req.path=="/joho/soumu"
+      key = URI.decode_www_form(req.fullpath)[0][1]
+      p "key => " + key
+      res_array = get_soumu_search_result(key)
+      header["Content-Type"] = 'text/html'
+      response               = File.read("joho/SearchResult.html").sub(/<--検索結果-->/,res_array.join("\n"))
+
+    elsif req.path=="/joho" or req.path=="/joho/" or req.path=="/joho/index.html"
+      header["Content-Type"] = 'text/html'        
+      response               = File.read('joho/index.html')
+
     else
       header["Content-Type"] = 'text/html'        
       response               = File.read('index.html')
