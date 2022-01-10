@@ -1,5 +1,12 @@
 require 'mechanize'
 
+Net::HTTP.prepend Module.new {
+  def use_ssl=(flag)
+    super
+    self.ciphers = "DEFAULT:!DH"
+  end
+}
+
 def get_soumu_search_result(search_word)
   
   url='https://koukai-hogo-db.soumu.go.jp/'
