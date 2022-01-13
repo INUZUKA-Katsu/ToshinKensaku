@@ -6,6 +6,89 @@
 <link rel="shortcut icon" type="image/x-icon" href="/images/favicon.ico"/>
 <link rel="stylesheet" media="screen" href="/css/common.css"/>
 <link rel="stylesheet" media="screen" href="/css/bootstrap.css"/>
+<script type="text/javascript">
+  var tblElm;
+  window.onload=function(){
+  	var search_word = document.getElementById("search_word").value;
+    tblElm = document.getElementsByTagName("table");
+    var max = tblElm.length;
+    //for(let i=0;i<20;i++){
+    //    alert(get_url(i));
+    //}
+    ajax(get_url(0),search_word,0,max);
+  }
+  function get_url(i){
+    //var tblElm = document.getElementsByTagName("table");
+    var aElm = tblElm[i].getElementsByTagName("a");
+    url = aElm[0].getAttribute("href");
+    console.log(url);
+    return url;
+  }
+  function time_stamp(){
+    var now  = new Date();
+    var hh = now.getHours();
+    var mm  = now.getMinutes();
+    var ss  = now.getSeconds();
+    console.log(hh+':'+mm+':'+ss)
+  }
+
+  //非同期通信で逐次読み込む。  
+  function ajax(url,search_word,i,max){
+    var xmlHttp  = null;
+    if(window.XMLHttpRequest){
+      xmlHttp = new XMLHttpRequest();
+    } else { //IE6とIE7の場合
+      if(windows.ActiveXObject){
+        xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+      } else {
+        xmlHttp = null;
+      }
+    }
+    if(null == xmlHttp ) { // 初期化失敗時
+      return ;
+    }
+    //タイムアウトの設定（5回試行する.）
+    var cnt=0;
+    var timerId=window.setTimeout(function(){
+        xmlHttp.abort();
+        time_stamp();
+        if(cnt<5){
+          cnt++;
+          ajax(url,search_word,i,max);
+        }else{
+          //set_comment("on","データを読み込めませんでした。",1000);
+        }
+      },5000);
+    //応答時の処理定義
+    xmlHttp.onreadystatechange = function(){
+       if(xmlHttp.readyState == 4 && xmlHttp.status == 200){
+       //応答成功時、table Id=iにtrを追加
+          window.clearTimeout(timerId);
+          //set_comment("off");
+          //該当箇所の切り出しはサーバー側で行う。戻り値はtr内のtdのテキスト
+          var response=xmlHttp.responseText;
+          //戻り値をhtmlの当該答申のtableの最後に追加する。
+          //var tblElm = document.getElementsByTagName("table");
+          var trElm = tblElm[i].insertRow(-1)
+          trElm.setAttribute("class","search-result-body");
+          trElm.innerHTML = response;
+          //次の非同期通信処理
+          if(i<max){
+            ajax(get_url(i+1),search_word,i+1,max);
+          }
+       }
+    }
+    var ary = [];
+    ary.push("url=" + get_url(i) ) ;
+    ary.push("search_word=" + search_word ) ;
+    SendData=ary.join("&");
+    xmlHttp.open("POST" , "/kuni_toshin" , true);
+    xmlHttp.setRequestHeader("content-type",
+        "application/x-www-form-urlencoded");
+    encodeURIComponent(SendData).replace(/%20/g,'+');
+    xmlHttp.send(SendData);
+  }
+</script>
 <style type="text/css">
   div.right{ float:right;}
 </style>
@@ -17,6 +100,7 @@
 				<div class="lfloatbox">
 					<h4><a href="/report/" class="header-link">情報公開・個人情報保護審査会（国）</a></h4>
 					<h2><a href="/report/" class="header-link">答申データベース検索</a></h2>
+					<input type="hidden" id="search_word" value="<--SearchWord-->">
 				</div>
 			</div>
 		</header>
