@@ -43,33 +43,42 @@ def get_soumu_search_result(search_word)
     res_array = res.gsub(/\/(reportBody)/,url+'\1').
                     gsub(/\/reportPointOutline/,url+'\&').
                     scan(/<table class\="search\-result".*?table>/m)
-    #res_array.map! do |table|
-    #  honbun_url = table.match(/a href="(http.*?reportBody.*?)"/)[1]
-    #  #bango      = table.match(/答申\s第\s[0-9０-９]+号/)[0]
-    #  str        = agent.get(honbun_url).body.toutf8.gsub(/<.*?>/m,"")
-    #  part_str   = str.scan(/[^\n]{0,200}#{word_array.join("|")}[^\n]{0,200}\n?/).
-    #                 map do |s|
-    #                   s.gsub!(/#{word_array.join("|")}/,'<strong>\&</strong>')
-    #                   s.chomp
-    #                 end.
-    #                 join("<br><br>")
-    #  table.sub(/\n\s+<\/table>/, TR.sub(/<--該当部分-->/,part_str) + '\&')
-    #end
+    Thread.new(res_array) do |res_array|
+      save_tmp(res_array)
+    end
   end
   res_array
+end
+
+def save_tmp(table_array)
+  agent = Mechanize.new
+  table_array.each do |table|
+    honbun_url = table.match(/a href="(http.*?reportBody.*?)"/)[1]
+    str        = agent.get(honbun_url).body.toutf8.gsub(/<.*?>/m,"")
+    file_name  = "./tmp/"+honbun_url.sub(/http.*?reportBody\/(.*)/,'reportBody\1.txt')
+    File.write(file_name,str)
+  end
 end
 
 def get_text_range(url,search_word)
   p "search_word => "+search_word
   word_array = search_word.split(/[\s　]+/)
-  agent = Mechanize.new
-  agent.user_agent_alias = 'Mac Safari'
-  str = agent.get(url).body.toutf8.gsub(/<.*?>/m,"")
-  part_str   = str.scan(/[^\n]{0,200}#{word_array.join("|")}[^\n]{0,200}\n?/).
-                 map do |s|
-                   s.gsub!(/#{word_array.join("|")}/,'<strong>\&</strong>')
-                   s.chomp
-                 end.
-                 join("<br><br>")
-  TR.sub(/<--該当部分-->/,part_str)
+  str = get_text(url)
+  part_array = str.scan(/[^\n]{0,200}#{word_array.join("|")}[^\n]{0,200}\n?/).
+               map do |s|
+                 s.gsub!(/#{word_array.join("|")}/,'<strong>\&</strong>')
+                 s.chomp
+               end
+  TR.sub(/<--該当部分-->/,part_array.join("<br><br>"))
+end
+
+def get_text(url)
+  local = "./tmp/" + url.sub(/http.*?reportBody\/(.*)/,'reportBody\1.txt')
+  if File.exist? local
+    str = File.read(local)
+  else
+    agent = Mechanize.new
+    agent.user_agent_alias = 'Mac Safari'
+    str = agent.get(url).body.toutf8.gsub(/<.*?>/m,"")
+  end
 end
