@@ -43,6 +43,14 @@ def get_soumu_search_result(search_word)
     res_array = res.gsub(/\/(reportBody)/,url+'\1').
                     gsub(/\/reportPointOutline/,url+'\&').
                     scan(/<table class\="search\-result".*?table>/m)
+    #次ページへのリンクから次のページのデータを取得し、さらに次ページがある間、それを繰り返す。
+    while next_page = res.match(/<a title\="次のページ" href\="\/(report\/search\/page\/\d+)" class\="btn btn\-small">/)
+      res = agent.get(url+next_page[1]).body.toutf8
+      res_array += res.gsub(/\/(reportBody)/,url+'\1').
+                    gsub(/\/reportPointOutline/,url+'\&').
+                    scan(/<table class\="search\-result".*?table>/m)
+    end
+    #検索結果をブラウザに返すのとは別のスレッドで答申全文を取得してtmpフォルダに保存する作業を続ける。
     Thread.new(res_array) do |res_array|
       save_tmp(res_array)
     end
