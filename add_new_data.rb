@@ -170,33 +170,35 @@ def get_midashi_data_from(text_file)
   end
   #[ bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu ]
   h = Hash.new
-  h[:bango]=bango
-  h[:yyyymmdd]=yyyymmdd
-  h[:toshinbi]=toshinbi
-  h[:jisshikikan]=jisshikikan
-  h[:bukai]=bukai
-  h[:iin]=iin
-  h[:jorei]=jorei
-  h[:seikyu]=seikyu
+  h["bango"]=bango
+  h["yyyymmdd"]=yyyymmdd
+  h["toshinbi"]=toshinbi
+  h["jisshikikan"]=jisshikikan
+  h["bukai"]=bukai
+  h["iin"]=iin
+  h["jorei"]=jorei
+  h["seikyu"]=seikyu
   h
 end
 
+midashi = JSON.parse(File.read("#{__dir__}/tmp/bango_hizuke_kikan.json"))
 #保存済みの最新答申番号
-saved_max_num = JSON.parse(File.read("#{__dir__}/text/bango_hizuke_kikan.json")).map{|data| data[0]}.flatten.map{|num| num.to_i}.max
+saved_max_num = midashi.map{|data| data["num_array"][0].to_i}.max
+p saved_max_num
 toshin_url, toshin_kenmei = get_bango_url_kenmei_after(saved_max_num)
-
-midashi = JSON.parse(File.read("tmp/bango_hizuke_kikan.json"))
+puts toshin_url
+puts toshin_kenmei
 toshin_url.keys.each do |num|
   file_name = get_text_from(URL+toshin_url[num])
   h = get_midashi_data_from(file_name)
-  h[:num_array] = get_num_array_from(h[:bango])
-  h[:file_name] = file_name
-  h[:url]       = toshin_url[num]
-  h[:kenmei]    = toshin_kenmei[num]
+  h["num_array"] = get_num_array_from(h["bango"])
+  h["file_name"] = file_name
+  h["url"]       = toshin_url[num]
+  h["kenmei"]    = toshin_kenmei[num]
   midashi << h
 end
 
-midashi = midashi.sort_by{|h| h[:num_array][0].to_i}.map{|h| h.key_to_s}
+midashi = midashi.sort_by{|h| h["num_array"][0].to_i}
 File.write("tmp/bango_hizuke_kikan.json",JSON.generate(midashi))
 FileUtils.cp("tmp/bango_hizuke_kikan.json","text/bango_hizuke_kikan.json") #Heroku上では無効
 
