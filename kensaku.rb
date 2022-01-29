@@ -36,6 +36,25 @@ class S3Client
   def remove(file_name)
     @bucket.object("toshin/"+file_name).delete
   end
+  def get_list
+    res = []
+    @bucket.objects(prefix: "toshin/").each do |obj|
+      res << obj.key if obj.key.include? ".txt"
+    end
+    res
+  end
+  def fill_tmp_folder
+    s3_files = get_list.map{|f| f.sub("toshin/","")}
+    tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
+    thread = []
+    (s3_files-tmp_files).each do |f|
+      thread << Thread.new do
+        p f
+        File.write("./tmp/"+f,read(f))
+      end
+    end
+    thread.each(&:join)
+  end
 end
 def main(param)
   p param
@@ -440,7 +459,7 @@ class Toshin
           file_name = h[:file_name]
           begin
             #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
-            str = @s3.read(file_name).encode("UTF-8", :invalid => :replace)
+            str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
           rescue
             p file_name + "の読み込みエラー"
             str = " "

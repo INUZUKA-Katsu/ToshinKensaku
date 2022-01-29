@@ -8,7 +8,8 @@ Encoding.default_external = "utf-8"
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 
-#FileUtils.cp(Dir.glob("text/*.*"),"tmp")
+FileUtils.cp(Dir.glob("./text/*.*"),"./tmp")
+S3Client.new.fill_tmp_folder
 
 class ToshinApp
   #初期設定
