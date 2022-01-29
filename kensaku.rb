@@ -446,14 +446,14 @@ class Toshin
     #スレッドの同時実行数を150に制限.
     #locks = SizedQueue.new(150)
     selected = search(joken)
-    n = (selected.size/200.0).ceil
+    n = (selected.size/1200.0).ceil
     p selected.size
     p n
     n.times do |i|
       thread = []
-      st = i*200
+      st = i*1200
       p st
-      selected[st,200].each do |h|
+      selected[st,1200].each do |h|
         thread << Thread.new do
           #locks.push(:lock)
           file_name = h[:file_name]
