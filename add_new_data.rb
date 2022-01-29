@@ -8,10 +8,34 @@ require 'pdf-reader'
 if $poppler == true
   require 'poppler'
 end
+require 'aws-sdk-s3'
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 Dest = "#{__dir__}/tmp/temp.pdf"
 
+class S3Client
+  attr_reader :bucket
+  def initialize
+    @resource = Aws::S3::Resource.new(
+      :region => 'us-east-1',
+      :access_key_id   => ENV['AWS_ACCESS_KEY_ID'],
+      :secret_access_key => ENV['AWS_SECRET_ACCESS_KEY']
+    )
+    @bucket = @resource.bucket('storgae-for-herokuapp')
+  end
+  def read(file_name)
+    @bucket.object("toshin/"+file_name).get.body.read.toutf8
+  end
+  def write(file_name,str)
+    @bucket.put_object(key: "toshin/"+file_name, body: str)
+  end
+  def exist?(file_name)
+    @bucket.object("toshin/"+file_name).exists?
+  end
+  def remove(file_name)
+    @bucket.object("toshin/"+file_name).delete
+  end
+end
 class String
   def to_yyyymmdd
     ary = self.scan(/(令和|平成)(.*)年(.*)月(.*)日/)[0]
@@ -103,8 +127,10 @@ def get_text_from(url)
     str = str.toutf8.gsub(" ","").tr("０-９","0-9").gsub(/−\d\d?−/,"").gsub(/^\s*\n+/m,"").
               sub("紙申審査会","審査会").
               gsub(/(?<!審査会の結論|審査請求の趣旨|説明要旨|本件処分に対する意見|審査会の判断|結論)\s*\n\s*(?!\s*([１-５ア-ンa-z]\s|\([1-9ｱ-ﾄa-z]\)|（第.部会）|（制度運用調査部会）|別表))/m,"")
-    file_name = "tmp/#{num}.txt"
-    File.write(file_name,str)
+    #file_name = "tmp/#{num}.txt"
+    #File.write(file_name,str)
+    file_name = "#{num}.txt"
+    s3.write(file_name,str)
     file_name
   end
 end
@@ -125,7 +151,8 @@ def get_num_array_from(bango)
    end
 end
 def get_midashi_data_from(text_file)
-  str = File.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
+  #str = File.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
+  str = s3.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
   begin
     if ans1 = str.match(/.*様(?=横浜市情報公開・個人情報保護審査会会長|横浜市公文書公開審査会会長)/)
       item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)](..元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
@@ -180,8 +207,9 @@ def get_midashi_data_from(text_file)
   h["seikyu"]=seikyu
   h
 end
-
-midashi = JSON.parse(File.read("#{__dir__}/tmp/bango_hizuke_kikan.json"))
+s3 = S3Client.new
+#midashi = JSON.parse(File.read("#{__dir__}/tmp/bango_hizuke_kikan.json"))
+midashi = JSON.parse(s3.read("bango_hizuke_kikan.json"))
 #保存済みの最新答申番号
 saved_max_num = midashi.map{|data| data["num_array"][0].to_i}.max
 p saved_max_num
@@ -199,6 +227,8 @@ toshin_url.keys.each do |num|
 end
 
 midashi = midashi.sort_by{|h| h["num_array"][0].to_i}
-File.write("tmp/bango_hizuke_kikan.json",JSON.generate(midashi))
-FileUtils.cp("tmp/bango_hizuke_kikan.json","text/bango_hizuke_kikan.json") #Heroku上では無効
+#File.write("tmp/bango_hizuke_kikan.json",JSON.generate(midashi))
+json = JSON.generate(midashi)
+s3.write("bango_hizuke_kikan.json", json)
+File.write("./text/bango_hizuke_kikan.json", json) #Heroku上では無効
 
