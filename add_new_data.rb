@@ -100,7 +100,7 @@ def get_bango_url_kenmei_after(max_num = nil)
   [toshin_url,toshin_kenmei]
 end
 
-def get_text_from(url)
+def get_text_from(url,s3)
   uri  = URI.parse(url)
   open(Dest, "w+b") do |dest|
     dest.write(uri.read)
@@ -217,7 +217,7 @@ toshin_url, toshin_kenmei = get_bango_url_kenmei_after(saved_max_num)
 puts toshin_url
 puts toshin_kenmei
 toshin_url.keys.each do |num|
-  file_name = get_text_from(URL+toshin_url[num])
+  file_name = get_text_from(URL+toshin_url[num], s3)
   h = get_midashi_data_from(file_name)
   h["num_array"] = get_num_array_from(h["bango"])
   h["file_name"] = file_name
