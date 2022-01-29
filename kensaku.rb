@@ -3,6 +3,7 @@ require 'kconv'
 require "net/https"
 require 'open-uri'
 require 'pdf-reader'
+require 'aws-sdk-s3'
 
 class Hash
   def key_to_sym()
@@ -11,6 +12,29 @@ class Hash
       new_h[k.to_sym]=self[k]
     end
     new_h
+  end
+end
+class S3Client
+  attr_reader :bucket
+  def initialize
+    @resource = Aws::S3::Resource.new(
+      :region => 'us-east-1',
+      :access_key_id   => ENV['AWS_ACCESS_KEY_ID'],
+      :secret_access_key => ENV['AWS_SECRET_ACCESS_KEY']
+    )
+    @bucket = @resource.bucket('storgae-for-herokuapp')
+  end
+  def read(file_name)
+    @bucket.object("toshin/"+file_name).get.body.read.toutf8
+  end
+  def write(file_name,str)
+    @bucket.put_object(key: "toshin/"+file_name, body: str)
+  end
+  def exist?(file_name)
+    @bucket.object("toshin/"+file_name).exists?
+  end
+  def remove(file_name)
+    @bucket.object("toshin/"+file_name).delete
   end
 end
 def main(param)
@@ -212,7 +236,8 @@ end
 
 class Toshin
   def initialize
-    @midashi = JSON.parse(File.read("tmp/bango_hizuke_kikan.json")).map{|h| h.key_to_sym}
+    @s3 = S3Client.new
+    @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json")).map{|h| h.key_to_sym}
   end
   def search(joken) #jokenはハッシュ
     selected = @midashi
@@ -405,7 +430,8 @@ class Toshin
     selected.each do |h|
       file_name = h[:file_name]
       begin
-        str = File.read(file_name).encode("UTF-8", :invalid => :replace)
+        #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
+        str = @s3.read(file_name).encode("UTF-8", :invalid => :replace)
       rescue
         p file_name + "の読み込みエラー"
         str = " "
