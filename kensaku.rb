@@ -423,11 +423,14 @@ class Toshin
     word_ary,type,range_joken = joken[:freeWord],joken[:freeWordType],text_range(joken)
     #ユーザーが正規表現を使いやすくする。”\”は取り扱いが難しいので"¥"が使えるようにする。
     word_ary.map!{|w| w.gsub('¥',"\\")}
-    res = Array.new
-    thread = Array.new
+    res =  []
+    thread = []
+    #スレッドの同時実行数を200に制限.
+    locks = SizedQueue.new(200)
     selected = search(joken)
     selected.each_with_index do |h,i|
-      thread[i]=Thread.new do
+      thread << Thread.new do
+        locks.push(:lock)
         file_name = h[:file_name]
         begin
           #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
@@ -441,11 +444,10 @@ class Toshin
           h[:matched_range] = matched_range
           res << h
         end
+        locks.pop
       end
     end
-    (0..selected.size-1).each do |i|
-      thread[i].join
-    end
+    thread.each(&:join)
     res
   end
 end
