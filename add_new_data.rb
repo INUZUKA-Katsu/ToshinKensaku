@@ -150,7 +150,7 @@ def get_num_array_from(bango)
      return [ res[0] ]
    end
 end
-def get_midashi_data_from(text_file)
+def get_midashi_data_from(text_file,s3)
   #str = File.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
   str = s3.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
   begin
@@ -218,7 +218,7 @@ puts toshin_url
 puts toshin_kenmei
 toshin_url.keys.each do |num|
   file_name = get_text_from(URL+toshin_url[num], s3)
-  h = get_midashi_data_from(file_name)
+  h = get_midashi_data_from(file_name, s3)
   h["num_array"] = get_num_array_from(h["bango"])
   h["file_name"] = file_name
   h["url"]       = toshin_url[num]
