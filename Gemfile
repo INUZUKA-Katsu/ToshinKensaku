@@ -5,4 +5,4 @@ gem 'rack'
 gem 'puma'
 gem 'pdf-reader'
 gem 'mechanize'
-
+gem 'aws-sdk-s3'
