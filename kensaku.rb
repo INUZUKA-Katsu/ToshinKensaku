@@ -424,30 +424,37 @@ class Toshin
     #ユーザーが正規表現を使いやすくする。”\”は取り扱いが難しいので"¥"が使えるようにする。
     word_ary.map!{|w| w.gsub('¥',"\\")}
     res =  []
-    thread = []
     #スレッドの同時実行数を150に制限.
-    locks = SizedQueue.new(150)
+    #locks = SizedQueue.new(150)
     selected = search(joken)
-    selected.each_with_index do |h,i|
-      thread << Thread.new do
-        locks.push(:lock)
-        file_name = h[:file_name]
-        begin
-          #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
-          str = @s3.read(file_name).encode("UTF-8", :invalid => :replace)
-        rescue
-          p file_name + "の読み込みエラー"
-          str = " "
+    n = (selected.size/200.0).ceil
+    p selected.size
+    p n
+    n.times do |i|
+      thread = []
+      st = i*200
+      p st
+      selected[st,200].each do |h|
+        thread << Thread.new do
+          #locks.push(:lock)
+          file_name = h[:file_name]
+          begin
+            #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
+            str = @s3.read(file_name).encode("UTF-8", :invalid => :replace)
+          rescue
+            p file_name + "の読み込みエラー"
+            str = " "
+          end
+          matched_range = exec_search(str,word_ary,type,range_joken)
+          if matched_range
+            h[:matched_range] = matched_range
+            res << h
+          end
+          #locks.pop
         end
-        matched_range = exec_search(str,word_ary,type,range_joken)
-        if matched_range
-          h[:matched_range] = matched_range
-          res << h
-        end
-        locks.pop
       end
+      thread.each(&:join)
     end
-    thread.each(&:join)
     res
   end
 end
