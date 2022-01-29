@@ -237,7 +237,7 @@ end
 class Toshin
   def initialize
     @s3 = S3Client.new
-    @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json")).map{|h| h.key_to_sym}
+    @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
   end
   def search(joken) #jokenはハッシュ
     selected = @midashi
@@ -424,25 +424,27 @@ class Toshin
     #ユーザーが正規表現を使いやすくする。”\”は取り扱いが難しいので"¥"が使えるようにする。
     word_ary.map!{|w| w.gsub('¥',"\\")}
     res = Array.new
+    thread = Array.new
     selected = search(joken)
-    #p :step2
-    i=0
-    selected.each do |h|
-      file_name = h[:file_name]
-      begin
-        #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
-        str = @s3.read(file_name).encode("UTF-8", :invalid => :replace)
-      rescue
-        p file_name + "の読み込みエラー"
-        str = " "
+    selected.each_with_index do |h,i|
+      thread[i]=Thread.new do
+        file_name = h[:file_name]
+        begin
+          #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
+          str = @s3.read(file_name).encode("UTF-8", :invalid => :replace)
+        rescue
+          p file_name + "の読み込みエラー"
+          str = " "
+        end
+        matched_range = exec_search(str,word_ary,type,range_joken)
+        if matched_range
+          h[:matched_range] = matched_range
+          res << h
+        end
       end
-      matched_range = exec_search(str,word_ary,type,range_joken)
-      if matched_range
-        i+=1
-        #p i
-        h[:matched_range] = matched_range
-        res << h
-      end
+    end
+    (0..selected.size-1).each do |i|
+      thread[i].join
     end
     res
   end
