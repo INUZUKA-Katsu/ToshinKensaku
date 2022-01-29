@@ -425,8 +425,8 @@ class Toshin
     word_ary.map!{|w| w.gsub('¥',"\\")}
     res =  []
     thread = []
-    #スレッドの同時実行数を200に制限.
-    locks = SizedQueue.new(200)
+    #スレッドの同時実行数を150に制限.
+    locks = SizedQueue.new(150)
     selected = search(joken)
     selected.each_with_index do |h,i|
       thread << Thread.new do
