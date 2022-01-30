@@ -443,22 +443,16 @@ class Toshin
     #ユーザーが正規表現を使いやすくする。”\”は取り扱いが難しいので"¥"が使えるようにする。
     word_ary.map!{|w| w.gsub('¥',"\\")}
     res =  []
-    #スレッドの同時実行数を150に制限.
-    #locks = SizedQueue.new(150)
+    #Herokuのリソースエラーにならないようにスレッド数を200に制限.
     selected = search(joken)
-    n = (selected.size/1200.0).ceil
-    p selected.size
-    p n
+    n = (selected.size/200.0).ceil
     n.times do |i|
       thread = []
-      st = i*1200
-      p st
-      selected[st,1200].each do |h|
+      st = i*200
+      selected[st,200].each do |h|
         thread << Thread.new do
-          #locks.push(:lock)
           file_name = h[:file_name]
           begin
-            #str = File.read(file_name).encode("UTF-8", :invalid => :replace)
             str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
           rescue
             p file_name + "の読み込みエラー"
@@ -469,7 +463,6 @@ class Toshin
             h[:matched_range] = matched_range
             res << h
           end
-          #locks.pop
         end
       end
       thread.each(&:join)
