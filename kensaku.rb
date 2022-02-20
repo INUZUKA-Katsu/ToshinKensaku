@@ -403,6 +403,10 @@ class Toshin
         "[^\n]{0,100}(#{word_ary.join("|")})(.*(#{word_ary.join("|")}))?[^\n]{0,100}\n?"
     end
     def exec_search(str,word_ary,type,range_joken)
+      #条文の条項号の番号を半角に変換する。
+      str.gsub!(/第[０-９]+(条|項|号)/) do |w|
+      	w.tr("０-９","0-9")
+      end
       #審査会の判断など指定された範囲を切り出す。
       if range_joken and ans = str.match(/#{range_joken}/m)
         str = ans[0]
@@ -412,13 +416,13 @@ class Toshin
       when "and"
         #マッチしない語句が一つでもあればそのファイルは終了
         word_ary.each do |k|
-          return nil unless str.match(/#{k}/)
+          return nil unless str.match(/#{k}/m)
         end
       when "or"
         #マッチする語句が一つもなければそのファイルは終了
         res = nil
         word_ary.each do |k|
-          res = true if str.match(/#{k}/)
+          res = true if str.match(/#{k}/m)
         end
         return nil unless res
       end
@@ -428,9 +432,9 @@ class Toshin
       #str_range = str.match(/#{reg_pattern(word_ary)}/m)[0]
       #str_range.scan(/[^\n]{0,100}#{word_ary.join("|")}(.*?#{word_ary.join("|")}[^\n]{0,100})?/).
       #str_range.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/).
-      str.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/).
+      str.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/m).
                 map do |s|
-                  s.gsub!(/#{word_ary.join("|")}/,'<strong>\&</strong>')
+                  s.gsub!(/#{word_ary.join("|")}/m,'<strong>\&</strong>')
                   s.chomp
                 end.
                 join("<br><br>")
