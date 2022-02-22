@@ -403,13 +403,9 @@ class Toshin
         "[^\n]{0,100}(#{word_ary.join("|")})(.*(#{word_ary.join("|")}))?[^\n]{0,100}\n?"
     end
     def exec_search(str,word_ary,type,range_joken)
-      #条文の条項号の番号を半角に変換する。
-      str.gsub!(/第[０-９]+(条|項|号)/) do |w|
-      	w.tr("０-９","0-9")
-      end
-      #審査会の判断など指定された範囲を切り出す。
+      #審査会の判断など指定された範囲を切り出す。全角数字は半角に変換する。
       if range_joken and ans = str.match(/#{range_joken}/m)
-        str = ans[0]
+        str = ans[0].tr("０-９","0-9")
         #p str
       end
       case type
@@ -446,6 +442,8 @@ class Toshin
     word_ary,type,range_joken = joken[:freeWord],joken[:freeWordType],text_range(joken)
     #ユーザーが正規表現を使いやすくする。”\”は取り扱いが難しいので"¥"が使えるようにする。
     word_ary.map!{|w| w.gsub('¥',"\\")}
+    #検索語に含まれる数字をすべて半角に変換する。
+    word_ary.map!{|w| w.tr("０-９","0-9")}
     res =  []
     #Herokuのリソースエラーにならないようにスレッド数を200に制限.
     selected = search(joken)
