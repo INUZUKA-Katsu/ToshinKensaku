@@ -126,6 +126,7 @@
          function sync(name,val){
             var btnObj1 = document.getElementsByName("search")[0];
             var btnObj2 = document.getElementsByName("btnG")[0];
+            var chkOpt;
             if(val=="tokyo"){
                 btnObj1.value = "東京都DB検索"
                 btnObj2.value = "東京都DB検索"
@@ -137,12 +138,19 @@
                 btnObj2.value = "Google 検索"
             }
             if(name=="vs"){
-                var chkOpt = document.getElementsByName("sitesearch");
+                chkOpt = document.getElementsByName("sitesearch");
             }else if(name=="sitesearch"){
-                var chkOpt = document.getElementsByName("vs");
+                chkOpt = document.getElementsByName("vs");
             }
-            for (var i=0 ; i < chkOpt.length ; i++) {
-                if(chkOpt[i].value==val){chkOpt[i].checked=true;}
+            if(name=="vs"||name=="sitesearch"){
+              for (var i=0 ; i < chkOpt.length ; i++) {
+                  if(chkOpt[i].value==val){chkOpt[i].checked=true;}
+              }
+            }
+            if(name=="yahoo_text_box"){
+              document.getElementById("google_text_box").value=val;
+            }else if(name=="google_text_box"){
+              document.getElementById("yahoo_text_box").value=val;
             }
          }
          function get_SendData_z(key){
@@ -221,7 +229,7 @@
       </a>
      </td>
      <td>
-      <input type="text" name="p" size="40" id="yahoo_text_box">
+      <input type="text" name="p" size="40" id="yahoo_text_box" onchange="sync(this.id,this.value)">
       <input type="hidden" name="fr" value="ysiwb">
       <input type="hidden" name="ei" value="UTF-8">
       <input type=submit name=search value="yahoo 検索">
@@ -255,7 +263,7 @@
          </a>
        </td>
        <td>
-         <input type=text name=q size=40 maxlength=255 value="" id="google_text_box">
+         <input type=text name=q size=40 maxlength=255 value="" id="google_text_box" onchange="sync(this.id,this.value)">
          <input type=hidden name=ie value=UTF-8>
          <input type=hidden name=oe value=UTF-8>
          <input type=hidden name=hl value="ja" id=hl>
