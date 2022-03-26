@@ -406,7 +406,8 @@ class Toshin
       #審査会の判断など指定された範囲を切り出す。全角数字は半角に変換する。
       if range_joken and ans = str.match(/#{range_joken}/m)
         str = ans[0].tr("０-９","0-9")
-        #p str
+      else
+        str = str.tr("０-９","0-9")
       end
       case type
       when "and"
