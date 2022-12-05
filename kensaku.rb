@@ -49,7 +49,7 @@ class S3Client
     thread = []
     (s3_files-tmp_files).each do |f|
       thread << Thread.new do
-        p f
+        #p f
         File.write("./tmp/"+f,read(f))
       end
     end
