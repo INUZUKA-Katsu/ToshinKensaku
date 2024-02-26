@@ -3,11 +3,8 @@
 require 'net/http'
 require 'uri'
 
-jst = 8
-while (8..22)===jst do
+jst = Time.at(Time.now, in: "+09:00").hour
+if (8..22)===jst
   #`curl http://toshin-kensaku.herokuapp.com/`
   p Net::HTTP.get(URI.parse('http://toshin-kensaku.herokuapp.com/'))
-  p Time.at(Time.now, in: "+09:00")
-  sleep 10*60
-  jst = Time.at(Time.now, in: "+09:00").hour
 end
