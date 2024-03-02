@@ -42,10 +42,29 @@
     }
   }
 </script>
+<style TYPE="text/css">
+	body  {
+           font-family:'メイリオ','ヒラギノ角ゴ Pro W3',sans-serif;
+    }
+	.kadou_jikan {
+        display:block;
+		float:right;
+		font-size:60%;
+        margin:0 0 0 auto;
+        text-indent:-1em;
+        width:300px;
+        line-height:1.2em;
+        color:#000080;
+   }
+   .top_link {
+	    margin-top:10px;
+   }
+</style>
 </head>
 <body data-spy="scroll">
 	<div id="wrap" class="root">
-		<a href="/joho/">横浜市例規集、国、東京都 審査会答申検索など</a>
+		<div class="kadou_jikan">※ このサイトは午後10時から午前8時までの間はスリープ状態になります。その時間帯にこのサイトにアクセスすると、スリープから復帰するまでに10数秒お待ちいただくことになります。一度動き出せば普通に応答します。30分間アクセスがないと再びスリープ状態に移行します。運用経費を節約するためです。ご不便をおかけしますが、ご了承ください。</div>
+		<div class="top_link"><a href="/joho/index.html#toshin">国、東京都等の情報公開審査会答申検索など</a>
 		<header class="header">
 			<div class="container header">
 				<div class="lfloatbox">
@@ -112,7 +131,7 @@
 			<table class="search-form">
 				<tr>
 					<td class="form-header">
-						<a href="/report/help#1" target="_blank"><font style="color:#ffffff;">用語検索</font></a>
+						<a href="/report/help#1" target="_blank"><font style="color:#ffffff;">語句検索</font></a>
 					<td class="form-contents">
 						<table class="search-form-inner">
 							<tr>
@@ -132,7 +151,7 @@
 			<table class="search-form">
 				<tr>
 					<td class="form-header">
-						<a href="/report/help#1" target="_blank"><font style="color:#ffffff;">詳細用語検索</font></a>
+						<a href="/report/help#1" target="_blank"><font style="color:#ffffff;">詳細語句検索</font></a>
 					</td>
 					<td class="form-contents">
 						<table class="search-form-inner">
@@ -417,6 +436,27 @@
 					<table class="footerInfo">
 						<tr>
 							<td colspan="2">
+								<div class="footerInfoHeader">【利用のヒント】</div>
+							</td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">特定の事柄に関する審査会の判断を知りたいときは、"詳細語句検索"の"[審査会の判断]"のテキストボックスに語句を入力して検索すると、効率よく答申を探すことができます。これがもっともシンプルでおすすめの利用方法です。
+							</font></td>
+						</tr>
+						<tr>
+							<td width="20" valign="top"><div align="right">
+									<font class="footerInfoMark">●</font>
+								</div></td>
+							<td><font class="footerInfo">"語句検索"は答申全体を対象として入力された語句を検索するので、審査請求人の意見の中だけに語句が使われている答申もヒットします。</font></td>
+						</tr>
+						<tr>
+							<td colspan="2"><br></td>
+						</tr>
+						<tr>
+							<td colspan="2">
 								<div class="footerInfoHeader">【検索について】</div>
 							</td>
 						</tr>
@@ -436,7 +476,7 @@
 							<td width="20" valign="top"><div align="right">
 									<font class="footerInfoMark">●</font>
 								</div></td>
-							<td><font class="footerInfo">ただし、用語検索・詳細用語検索はどれかひとつの入力欄だけに入力できます。複数の欄に入力しようとすると以前に入力した内容は消去されます。用語検索・詳細用語検索とそれ以外の条件とは組み合わせることができます。</font></td>
+							<td><font class="footerInfo">ただし、語句検索・詳細語句検索はどれかひとつの入力欄だけに入力できます。複数の欄に入力しようとすると以前に入力した内容は消去されます。語句検索・詳細語句検索とそれ以外の条件とは組み合わせることができます。</font></td>
 						</tr>
 						<tr>
 							<td width="20" valign="top"><div align="right">
@@ -460,7 +500,7 @@
 							<td width="20" valign="top"><div align="right">
 									<font class="footerInfoMark">●</font>
 								</div></td>
-							<td><font class="footerInfo">用語検索・詳細用語検索では、全角数字と半角数字を区別しません。全角数字を入力しても半角数字を入力しても同じ検索結果になります。</font></td>
+							<td><font class="footerInfo">語句検索・詳細語句検索では、全角数字と半角数字を区別しません。全角数字を入力しても半角数字を入力しても同じ検索結果になります。</font></td>
 						</tr>
 						<tr>
 							<td colspan="2"><br></td>
@@ -474,7 +514,7 @@
 							<td width="20" valign="top"><div align="right">
 									<font class="footerInfoMark">●</font>
 								</div></td>
-							<td><font class="footerInfo">用語検索・詳細用語検索では、簡単なものであれば正規表現を利用することができます。
+							<td><font class="footerInfo">語句検索・詳細語句検索では、簡単なものであれば正規表現を利用することができます。
 							<ul>
 								<li>「.」(コンマ)は、改行を含む任意の一文字を表します。</li>
 								<li>「¥n」は、改行を表します。</li>
@@ -547,5 +587,23 @@
 			</div>
 		</div>
 	</div>
+    <div style="text-align:center;font-size:11pt;font-style:italic;">
+      <hr style="margin:5em auto 1em auto;width:80%;">
+      <address>
+          <span style="display:block;">
+              2024年3月2日更新
+          </span>
+          <span style="display:block;">
+              問い合わせ、連絡先（不具合の報告、改良のアイディアをお寄せください.）
+              - <a href="mailto:inuzuka0601&#64;gmail.com">inuzuka0601&#64;gmail.com</a>
+          </span>
+            <span>
+              &copy;2024 INUZUKA Katsu.
+            </span>
+            <span>
+              All rights reserved.
+            </span>
+      </address>
+    </div>
 </body>
 </html>

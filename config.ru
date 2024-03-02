@@ -127,6 +127,6 @@ class ToshinApp
 end
 use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
 #use Rack::Static, :urls => ['/index.html','/js','/css','/image','/tmp'], :root => '.'
-#use Rack::Static, :urls => {'/'=>'index.html'}, :root => '.'
+use Rack::Static, :urls => {'/'=>'index.html'}, :root => '.'
 
 run ToshinApp.new

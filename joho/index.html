@@ -7,33 +7,60 @@
  <!--link rel="stylesheet" type="text/css" href="theme/hiki/hiki.css" media="all"-->
  <style TYPE="text/css">
   <!--
-   body {font-size:1.2rem;}
-   input {font-size:1.2rem;}
-   h1 { margin-top:0;
-        margin-bottom:0.5em;
-        padding:0;
-        text-align:center;
+   body  { font-size:1.2rem; 
+           font-family:'メイリオ','ヒラギノ角ゴ Pro W3',sans-serif;
+   }
+   input { font-size:1.2rem; }
+   h1    { margin-top:0;
+           margin-bottom:0.5em;
+           padding:0;
+           text-align:center;
    }
 
-   div {margin: 0;
-        padding:0;
+   div   { margin: 0;
+           padding:0;
    }
-   div.link form {display:inline;}
+   div.link form {
+           display:inline;
+   }
    div.link {
-             width:37em;
-             margin: 0 1em 1em auto;
-             padding: 0.5em;
-             font-size: large;
-             border: 1px #999999 solid;
-             background-color: #FFFFFF;
+           width:37em;
+           margin: 0 1em 1em auto;
+           padding: 0.5em;
+           font-size: large;
+           border: 1px #999999 solid;
+           background-color: #FFFFFF;
    }
-   .comment { font-size:80%; }
-
+   .top_link {
+          position:absolute;
+          top:5px;
+          left:5px;
+   }
+   .kadou_jikan {
+           font-size:60%;
+           margin:0 0 0 auto;
+           text-indent:-1em;
+           width:35%;
+           line-height:1.2em;
+           color:#000080;
+   }
+   .comment { 
+           font-size:60%; 
+           padding:0.3em 0 0.5em 2em;
+           text-indent:-1em;
+           width:40em;
+           line-height:1.2em;
+           color:#4169E1;
+   }
    table { margin: auto;
            border-color: #FFFFFF ;
    }
-   p {margin-top:0em ; margin-bottom:0;}
-   p.ma {margin-top:0.8em ;margin-bottom:0.8em}
+   p     { margin-top:0em ; 
+           margin-bottom:0;
+   }
+   p.ma  { margin-top:0.8em ;
+           margin-bottom:0.8em
+   }
 
   -->
  </style>
@@ -192,7 +219,9 @@
 <body>
 <a name="top"> </a>
 
-<a href='https://www.city.yokohama.lg.jp/index.html'>横浜市公式サイト</a> / <a href='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/'>横浜市市民情報室</a>
+<div class="kadou_jikan">※ このサイトは午後10時から午前8時までの間はスリープ状態になります。その時間帯にこのサイトにアクセスすると、スリープから復帰するまでに10数秒お待ちいただくことになります。一度動き出せば普通に応答します。30分間アクセスがないと再びスリープ状態に移行します。運用経費を節約するためです。ご不便をおかけしますが、ご了承ください。</div>
+
+<div class="top_link"><a href='https://www.city.yokohama.lg.jp/index.html'>横浜市公式サイト</a> / <a href='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/'>横浜市市民情報室</a></div>
 
 <h1 class="header">横浜市例規集、ほか各種検索</h1>
 
@@ -205,20 +234,15 @@
     <a href="https://drweb.city.yokohama.lg.jp/">横浜市行政文書目録検索</a>
  </p>
  <p class="ma">
-    <a href="https://cgi.city.yokohama.lg.jp/somu/reiki/reiki_menu.html">横浜市例規集（五十音別、体系別）</a>
-    <br><span class="comment">※キーワードによるYahoo検索、google検索をお薦めします.</span>
- </p>
- <p class="ma">
     <a href="https://elaws.e-gov.go.jp/search/elawsSearch/elaws_search/lsg0100/">国の法令を検索</a>　（総務省のHP。法令データ提供システム）
  </p>
  <p class="ma"><a href="https://www.courts.go.jp/app/hanrei_jp/search1">判例検索システム</a>　（最高裁判所のHP）</p>
  <p>
     <a href="https://pyramid-yokohama.herokuapp.com">横浜市の人口ピラミッド（区別、町丁別）</a>
-    <br><span class="comment">※セキュアブラウザⅡで見ることができます.</span>
  </p>
 </div>
 
-
+<a name="toshin"></name>
 <div class="main">
 <!-- Begin Yahoo Search Form -->
 <form name='formYahoo' onSubmit='return addstring("vs")' action="https://search.yahoo.co.jp/search" method="get" style="margin:0;padding:0;" target="_blank">
@@ -246,6 +270,7 @@
    <p class="ma"><strong>【情報公開】</strong></p>
    <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai"> 横浜市の答申を検索　⇒<a href="https://toshin-kensaku.herokuapp.com/">DB検索システム</a></p>
    <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="soumusyo"> 国の答申を検索（国のDB検索で検索) </p>
+   <div class="comment">※ 国のシステムでは検索結果を一つ一つ開けないと検索語句がどのように使われているのか確認することができませんが、ここでは、国のシステムを拡張し、検索語句の前後の文章を一覧することができる独自の検索結果画面を表示します。</div>
    <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="tokyo"> 東京都の答申を検索（東京都のDB検索で検索）</p>
    <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value=" "> 全国の答申を検索</p>
     </font>
@@ -282,6 +307,7 @@
          <p class="ma"> <strong>【情報公開】</strong></p>
          <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai'> 横浜市の答申を検索　⇒<a href="https://toshin-kensaku.herokuapp.com/">DB検索システム</a></p>
          <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='soumusyo'> 国の答申を検索（国のDB検索で検索）</p>
+         <div class="comment">※ 国のシステムでは検索結果を一つ一つ開けないと検索語句がどのように使われているのか確認することができませんが、ここでは、国のシステムを拡張し、検索語句の前後の文章を一覧することができる独自の検索結果画面を表示します。</div>
          <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='tokyo'> 東京都の答申を検索（東京都のDB検索で検索）</p>
          <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value=' '> 全国の答申を検索</p>
        </td></tr></table>
@@ -291,6 +317,24 @@
 
 </div>
 
+<div style="text-align:center;font-size:11pt;font-style:italic;">
+  <hr style="margin:5em auto 1em auto;width:80%;">
+  <address>
+      <span style="display:block;">
+          2024年3月2日更新
+      </span>
+      <span style="display:block;">
+          問い合わせ、連絡先（不具合の報告、改良のアイディアをお寄せください.）
+          - <a href="mailto:inuzuka0601&#64;gmail.com">inuzuka0601&#64;gmail.com</a>
+      </span>
+        <span>
+          &copy;2024 INUZUKA Katsu.
+        </span>
+        <span>
+          All rights reserved.
+        </span>
+  </address>
+</div>
 
 </body>
 </html>
