@@ -89,6 +89,7 @@
       }
       key = get_original_word(key);
       let btnVal = get_BtnVal(SiteUrl);
+      console.log("btnVal=>"+btnVal);
       if (btnVal=="横浜市DB検索"){
         console.log('/joho/yokohama?key_word='+key);
         window.open('/joho/yokohama?key_word='+key,'_blank')
@@ -148,9 +149,16 @@
       document.getElementsByName("vs")[1].checked=true ;
     }
     function sync(name,val){
-      var btnObj1 = document.getElementsByName("search")[0];
-      var btnObj2 = document.getElementsByName("btnG")[0];
-      var chkOpt;
+      // 2つのテキストボックスの入力データを同期する.
+      if(name=="yahoo_text_box"){
+        document.getElementById("google_text_box").value=val;
+      }else if(name=="google_text_box"){
+        document.getElementById("yahoo_text_box").value=val;
+      } 
+      // 検索の種類のいずれかを選択したとき、選択に応じてサブミットボタンの表示を切り替える.     
+      let btnObj1 = document.getElementsByName("search")[0];
+      let btnObj2 = document.getElementsByName("btnG")[0];
+      let chkOpt;
       if(val.match(/shinsakai/)){
         let subObj1 = document.getElementsByName("ch")[0];
         let subObj2 = document.getElementsByName("ch2")[0];
@@ -179,43 +187,36 @@
         btnObj2.value = "Google 検索"
         clear_quotation();
       }
+      // 検索の種類のいずれかを選択したとき、Yahoo検索とGoogle検索の検索の種類を同期する.
       if(name=="vs"){
         chkOpt = document.getElementsByName("sitesearch");
       }else if(name=="sitesearch"){
         chkOpt = document.getElementsByName("vs");
       }
-      if(name=="vs"||name=="sitesearch"){
-        for (var i=0 ; i < chkOpt.length ; i++) {
-          if(chkOpt[i].value==val){chkOpt[i].checked=true;}
-        }
-      }
-      if(name=="yahoo_text_box"){
-        document.getElementById("google_text_box").value=val;
-      }else if(name=="google_text_box"){
-        document.getElementById("yahoo_text_box").value=val;
-      }
+      get_opt(chkOpt,val).checked = true;
     }
     function change_opt(name,val){
+      let SiteUrl      ;
+      let btnObj_name  ;
+      let btnObj_valStr;
       if(name=='ch'){
-        let main_opts = document.getElementsByName("vs");   
-        if(get_opt(main_opts,"shinsakai").checked==true){            
-          let btnObj = document.getElementsByName("search")[0];
-          if(val=="db"){
-            btnObj.value = "横浜市DB検索";
-          }else{
-            btnObj.value = "Yahoo 検索";
-          }
-        }
+        SiteUrl       = "vs";
+        btnObj_name   = "search";
+        btnObj_valStr = "Yahoo 検索";
       }else if(name=='ch2'){
-        let main_opts = document.getElementsByName("sitesearch");   
-          if(get_opt(main_opts,"shinsakai").checked==true){            
-            let btnObj = document.getElementsByName("btnG")[0];
-            if(val=="db"){
-              btnObj.value = "横浜市DB検索";
-            }else{
-              btnObj.value = "Google 検索";
-            }
-          }
+        SiteUrl       = "sitesearch";
+        btnObj_name   = "btnG";
+        btnObj_valStr = "Google 検索";
+      }
+      let main_opts = document.getElementsByName(SiteUrl);
+      if(get_opt(main_opts,"shinsakai").checked==true){            
+        let btnObj = document.getElementsByName(btnObj_name)[0];
+        if(val=="db"){
+          btnObj.value = "横浜市DB検索";
+          clear_quotation();
+        }else{
+          btnObj.value = btnObj_valStr;
+        }
       }
     }
     function get_BtnVal(SiteUrl){
@@ -230,7 +231,7 @@
         btnVal = document.getElementsByName("btnG")[0].value;
       }
       if(get_opt(opts,"shinsakai").checked==true && get_opt(subOpts,"db").checked==true){
-         tnVal = "横浜市DB検索";
+         btnVal = "横浜市DB検索";
       }
       return btnVal ;
     }
