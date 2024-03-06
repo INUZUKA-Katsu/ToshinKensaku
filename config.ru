@@ -26,10 +26,18 @@ class ToshinApp
     param = req.POST()
     header  = Hash.new
     kensu = 0
-    if req.post? and req.path=="/report/search"
-      #Postリクエストのとき、Pyramid.rbのmainを実行する。
-      joken, j_str = main(param)
-      #p "joken=>"+joken.to_s
+    if (req.post? and req.path=="/report/search") or (req.get? and req.path=="/joho/yokohama")
+    # 「答申データベース検索」画面で検索を実行したとき
+    # または、「例規集、ほか各種検索」画面で「横浜市の答申を検索(DB検索)」を実行したときの処理
+      if req.post?
+        #「答申データベース検索」の検索実行の場合は、
+        # kensaku.rb の postData_arrange でリクエストデータを取得する。
+        joken, j_str = postData_arrange(param)
+      else
+        #「例規集、ほか各種検索」画面の「横浜市の答申を検索(DB検索)」の場合は、
+        # kensaku.rb の getData_arrange でリクエストデータを取得する。
+        joken, j_str = getData_arrange(req.query_string)
+      end
       toshin = Toshin.new
       h = toshin.get_hinagata_data(joken)
       kensu = h.size

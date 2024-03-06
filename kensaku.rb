@@ -56,7 +56,7 @@ class S3Client
     thread.each(&:join)
   end
 end
-def main(param)
+def postData_arrange(param)
   p param
   joken = Hash.new
   j_str = Hash.new
@@ -250,6 +250,18 @@ def main(param)
       j_str["答申番号"] += "〜第#{num}号"
     end
   end
+  [ joken, j_str ]
+end
+def getData_arrange(query_string)
+  joken={}
+  j_str={}
+  key_word = Hash[URI.decode_www_form(query_string)]["key_word"]
+  joken[:seikyu] = "開示請求"
+  joken[:freeWordRange] = "shinsakai"
+  joken[:freeWord] = key_word.split(/\s+|　+/)
+  joken[:freeWordType]="and"
+  j_str["審査会の判断"]=joken[:freeWord].map{|w| '"'+w+'"'}.join(" かつ ")
+  j_str["請求"]="開示請求"
   [ joken, j_str ]
 end
 

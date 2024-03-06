@@ -1,340 +1,403 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
- <meta charset="UTF-8">
+  <meta charset="UTF-8">
 
- <title>市民情報室関係検索</title>
- <!--link rel="stylesheet" type="text/css" href="theme/hiki/hiki.css" media="all"-->
- <style TYPE="text/css">
+  <title>市民情報室関係検索</title>
+  <!--link rel="stylesheet" type="text/css" href="theme/hiki/hiki.css" media="all"-->
+  <style TYPE="text/css">
   <!--
-   body  { font-size:1.2rem; 
-           font-family:'メイリオ','ヒラギノ角ゴ Pro W3',sans-serif;
-   }
-   input { font-size:1.2rem; }
-   h1    { margin-top:0;
-           margin-bottom:0.5em;
-           padding:0;
-           text-align:center;
-   }
+    body  { font-size:1.2rem; 
+            font-family:'メイリオ','ヒラギノ角ゴ Pro W3',sans-serif;
+    }
+    input { font-size:1.2rem; }
+    h1    { margin-top:0;
+            margin-bottom:0.5em;
+            padding:0;
+            text-align:center;
+    }
 
-   div   { margin: 0;
-           padding:0;
-   }
-   div.link form {
-           display:inline;
-   }
-   div.link {
-           width:37em;
-           margin: 0 1em 1em auto;
-           padding: 0.5em;
-           font-size: large;
-           border: 1px #999999 solid;
-           background-color: #FFFFFF;
-   }
-   .top_link {
-          position:absolute;
-          top:5px;
-          left:5px;
-   }
-   .kadou_jikan {
-           font-size:60%;
-           margin:0 0 0 auto;
-           text-indent:-1em;
-           width:35%;
-           line-height:1.2em;
-           color:#000080;
-   }
-   .comment { 
-           font-size:60%; 
-           padding:0.3em 0 0.5em 2em;
-           text-indent:-1em;
-           width:40em;
-           line-height:1.2em;
-           color:#4169E1;
-   }
-   table { margin: auto;
-           border-color: #FFFFFF ;
-   }
-   p     { margin-top:0em ; 
-           margin-bottom:0;
-   }
-   p.ma  { margin-top:0.8em ;
-           margin-bottom:0.8em
-   }
+    div   { margin: 0;
+            padding:0;
+    }
+    div.link form {
+            display:inline;
+    }
+    div.link {
+            width:37em;
+            margin: 0 1em 1em auto;
+            padding: 0.5em;
+            font-size: large;
+            border: 1px #999999 solid;
+            background-color: #FFFFFF;
+    }
+    .top_link {
+           position:absolute;
+           top:5px;
+           left:5px;
+    }
+    .kadou_jikan {
+            font-size:60%;
+            margin:0 0 0 auto;
+            text-indent:-1em;
+            width:35%;
+            line-height:1.2em;
+            color:#000080;
+    }
+    .comment { 
+            font-size:60%; 
+            padding:0.3em 0 0.5em 2em;
+            text-indent:-1em;
+            width:40em;
+            line-height:1.2em;
+            color:#4169E1;
+    }
+    table { margin: auto;
+            border-color: #FFFFFF ;
+    }
+    p     { margin-top:0em ; 
+            margin-bottom:0;
+    }
+    p.ma  { margin-top:0.8em ;
+            margin-bottom:0.8em
+    }
+    .small {
+            font-size:65%;
+    }
 
   -->
- </style>
-
-     <script type="text/javascript">
-     <!--
-         function exit(str){
-           try {
-             throw new Error('終了!');
-           } catch (e) {
-               alert(str);
-               return false;
-           }
-         }
-         //検索ボタンをクリックしたときの処理
-         function addstring(SiteUrl) {
-             //SiteUrl  yahoo=>"vs", google=>"sitesearch"
-             var radioAry = document.getElementsByName(SiteUrl) ;
-             for (var i=0 ; i < radioAry.length ; i++) {
-                if ( document.getElementsByName(SiteUrl)[i].checked ) {
-                     var site_url = document.getElementsByName(SiteUrl)[i].value ;
-                }
-             }
-             if (SiteUrl=="sitesearch") {
-                  var key = document.formGoogle.q.value ;
-             } else if (SiteUrl=="vs") {
-                  var key = document.formYahoo.p.value ;
-             }
-             key = get_original_word(key);
-             if ( site_url=='soumusyo') {
-                 window.open('/joho/soumu?key_word='+key,'_blank')
-                 //デフォルトのアクションをキャンセルする。
-                 return false;
-
-             } else if (site_url=="tokyo") {
-                 var url="https://kobunsyo-johokokai.metro.tokyo.jp/disclosure/document/list?"
-                 var param = 'keyword_and='+key.replace(/[ 　]+/g,'+')+'&doc_class=102&page_size=100';
-                 window.open(url+param,'_blank')
-                 //デフォルトのアクションをキャンセルする。
-                 return false;
-
-             } else if (site_url.match("joho/kokai") || site_url==" ") {
-                 if(/\("情報公開" OR "個人情報保護" OR "個人情報の保護"\) "答申" "審査会の結論"/.test(key)==false){                 
-                     key += " (情報公開 OR 個人情報保護 OR 個人情報の保護) 答申 審査会の結論" ;
-                 }
-
-             } else if (site_url.match("reiki")) {
-                 /* key += " 例規集インターネット版" ; */
-             }
-
-             var quo = /"/g ;
-             var re1 = /[^\s\(\)]+/g;
-             var re2 = /"OR"/g;
-             key = key.replace(quo,'').replace(re1, '"' + '$&' + '"').replace(re2,'OR') ;
-             //exit(key);
-             if ( site_url.match("https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai")) {
-                 document.formGoogle.q.value = key + " filetype:pdf" ;
-             }else{
-                 document.formGoogle.q.value = key;
-             }
-             document.formYahoo.p.value =  key ;
-             return true;
-         }
-
-         function clear_quotation() {
-             var key =  document.formGoogle.q.value;
-             var origin =  get_original_word(key)
-             document.formGoogle.q.value = origin;
-             document.formYahoo.p.value = origin ;
-         }
-         
-         function get_original_word(key){
-             var quo = /"/g ;
-             var k1 = / 答申書 審査会の結論/g ;
-             var k2 = / 審査会の結論 \(東京都情報公開条例 OR 東京都個人情報の保護に関する条例\)/g ;
-             var k3 = / \(情報公開 OR 個人情報保護 OR 個人情報の保護\) 答申 審査会の結論/g ;
-             var k4 = / 例規集インターネット版/g ;
-             var k5 = / filetype:pdf/
-             var origin = key.replace(quo, "").replace(k1, "").replace(k2, "").replace(k3, "").replace(k4, "").replace(k5,"") ;
-             //alert(origin);
-             return origin;
+  </style>
+  <script type="text/javascript">
+  <!--
+    function exit(str){
+      try {
+        throw new Error('終了!');
+      } catch (e) {
+        alert(str);
+        return false;
+      }
+    }
+    //検索ボタンをクリックしたときの処理
+    function addstring(SiteUrl) {
+      //SiteUrl  yahoo=>"vs", google=>"sitesearch"
+      let radioAry = document.getElementsByName(SiteUrl) ;
+      let site_url = get_opt(radioAry,"checked").value ;
+      if (SiteUrl=="sitesearch") {
+        var key = document.formGoogle.q.value ;
+      } else if (SiteUrl=="vs") {
+        var key = document.formYahoo.p.value ;
+      }
+      key = get_original_word(key);
+      let btnVal = get_BtnVal(SiteUrl);
+      if (btnVal=="横浜市DB検索"){
+        console.log('/joho/yokohama?key_word='+key);
+        window.open('/joho/yokohama?key_word='+key,'_blank')
+        //デフォルトのアクションをキャンセルする。
+        return false;
+      } else if (btnVal=="総務省DB検索") {
+        window.open('/joho/soumu?key_word='+key,'_blank')
+        //デフォルトのアクションをキャンセルする。
+        return false;
+      } else if (btnVal=="東京都DB検索") {
+        var url="https://kobunsyo-johokokai.metro.tokyo.jp/disclosure/document/list?"
+        var param = 'keyword_and='+key.replace(/[ 　]+/g,'+')+'&doc_class=102&page_size=100';
+        window.open(url+param,'_blank')
+        //デフォルトのアクションをキャンセルする。
+        return false;
+      } else if (site_url.match("joho/kokai") || site_url==" ") {
+        if(/\("情報公開" OR "個人情報保護" OR "個人情報の保護"\) "答申" "審査会の結論"/.test(key)==false){                 
+          key += " (情報公開 OR 個人情報保護 OR 個人情報の保護) 答申 審査会の結論" ;
+        }
+      } else if (site_url.match("reiki")) {
+        /* key += " 例規集インターネット版" ; */
+      }
+      var quo = /"/g ;
+      var re1 = /[^\s\(\)]+/g;
+      var re2 = /"OR"/g;
+      key = key.replace(quo,'').replace(re1, '"' + '$&' + '"').replace(re2,'OR') ;
+      //exit(key);
+      if ( site_url.match("https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai")) {
+        document.formGoogle.q.value = key + " filetype:pdf" ;
+      }else{
+        document.formGoogle.q.value = key;
+      }
+      document.formYahoo.p.value =  key ;
+      return true;
+    }
+    function clear_quotation() {
+      var key =  document.formGoogle.q.value;
+      var origin =  get_original_word(key)
+      document.formGoogle.q.value = origin;
+      document.formYahoo.p.value = origin ;
+    }        
+    function get_original_word(key){
+      var quo = /"/g ;
+      var k1 = / 答申書 審査会の結論/g ;
+      var k2 = / 審査会の結論 \(東京都情報公開条例 OR 東京都個人情報の保護に関する条例\)/g ;
+      var k3 = / \(情報公開 OR 個人情報保護 OR 個人情報の保護\) 答申 審査会の結論/g ;
+      var k4 = / 例規集インターネット版/g ;
+      var k5 = / filetype:pdf/
+      var origin = key.replace(quo, "").replace(k1, "").replace(k2, "").replace(k3, "").replace(k4, "").replace(k5,"") ;
+      //alert(origin);
+      return origin;
+    }
+    function clear_contents() {
+      document.formGoogle.q.value = "" ;
+      document.formYahoo.p.value = "" ;
+      document.getElementsByName("siteseform.formGooglearch")[1].checked=true ;
+      document.getElementsByName("vs")[1].checked=true ;
+    }
+    function sync(name,val){
+      var btnObj1 = document.getElementsByName("search")[0];
+      var btnObj2 = document.getElementsByName("btnG")[0];
+      var chkOpt;
+      if(val.match(/shinsakai/)){
+        let subObj1 = document.getElementsByName("ch")[0];
+        let subObj2 = document.getElementsByName("ch2")[0];
+        if(subObj1.checked==true){
+          btnObj1.value = "横浜市DB検索";
+          clear_quotation();
+        }else{
+          btnObj1.value = "Yahoo 検索";
+        }
+        if(subObj2.checked==true){
+          btnObj2.value = "横浜市DB検索";
+          clear_quotation();
+        }else{
+          btnObj2.value = "Google 検索";
+        }
+      }else if(val=="tokyo"){
+        btnObj1.value = "東京都DB検索"
+        btnObj2.value = "東京都DB検索"
+        clear_quotation();
+      }else if(val=="soumusyo"){
+        btnObj1.value = "総務省DB検索"
+        btnObj2.value = "総務省DB検索"
+        clear_quotation();
+      }else{
+        btnObj1.value = "Yahoo 検索"
+        btnObj2.value = "Google 検索"
+        clear_quotation();
+      }
+      if(name=="vs"){
+        chkOpt = document.getElementsByName("sitesearch");
+      }else if(name=="sitesearch"){
+        chkOpt = document.getElementsByName("vs");
+      }
+      if(name=="vs"||name=="sitesearch"){
+        for (var i=0 ; i < chkOpt.length ; i++) {
+          if(chkOpt[i].value==val){chkOpt[i].checked=true;}
+        }
+      }
+      if(name=="yahoo_text_box"){
+        document.getElementById("google_text_box").value=val;
+      }else if(name=="google_text_box"){
+        document.getElementById("yahoo_text_box").value=val;
+      }
+    }
+    function change_opt(name,val){
+      if(name=='ch'){
+        let main_opts = document.getElementsByName("vs");   
+        if(get_opt(main_opts,"shinsakai").checked==true){            
+          let btnObj = document.getElementsByName("search")[0];
+          if(val=="db"){
+            btnObj.value = "横浜市DB検索";
+          }else{
+            btnObj.value = "Yahoo 検索";
           }
-
-         function clear_contents() {
-             document.formGoogle.q.value = "" ;
-             document.formYahoo.p.value = "" ;
-             document.getElementsByName("siteseform.formGooglearch")[1].checked=true ;
-             document.getElementsByName("vs")[1].checked=true ;
-         }
-         function sync(name,val){
-            var btnObj1 = document.getElementsByName("search")[0];
-            var btnObj2 = document.getElementsByName("btnG")[0];
-            var chkOpt;
-            if(val=="tokyo"){
-                btnObj1.value = "東京都DB検索"
-                btnObj2.value = "東京都DB検索"
-            }else if(val=="soumusyo"){
-                btnObj1.value = "総務省DB検索"
-                btnObj2.value = "総務省DB検索"
+        }
+      }else if(name=='ch2'){
+        let main_opts = document.getElementsByName("sitesearch");   
+          if(get_opt(main_opts,"shinsakai").checked==true){            
+            let btnObj = document.getElementsByName("btnG")[0];
+            if(val=="db"){
+              btnObj.value = "横浜市DB検索";
             }else{
-                btnObj1.value = "Yahoo 検索"
-                btnObj2.value = "Google 検索"
+              btnObj.value = "Google 検索";
             }
-            if(name=="vs"){
-                chkOpt = document.getElementsByName("sitesearch");
-            }else if(name=="sitesearch"){
-                chkOpt = document.getElementsByName("vs");
-            }
-            if(name=="vs"||name=="sitesearch"){
-              for (var i=0 ; i < chkOpt.length ; i++) {
-                  if(chkOpt[i].value==val){chkOpt[i].checked=true;}
-              }
-            }
-            if(name=="yahoo_text_box"){
-              document.getElementById("google_text_box").value=val;
-            }else if(name=="google_text_box"){
-              document.getElementById("yahoo_text_box").value=val;
-            }
-         }
-         function get_SendData_z(key){
-           var param = 'gyouseiKoukai=on&gyouseiHogo=on&dokuhouKoukai=on&dokuhouHogo=on&kaijiSeikyu=on&teiseiSeikyu=on&teishiSeikyu=on&searchType=1&limitOption=1&openFlag=1&searchQuery='
-;
-           return param + key.replace(/[ 　]+/g,' ')
-         }
-         function ajax_z(key){
-           var xmlHttp  = null;
-           if(window.XMLHttpRequest){
-             xmlHttp = new XMLHttpRequest();
-           } else { //IE6とIE7の場合
-             if(windows.ActiveXObject){
-               xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
-             } else {
-               xmlHttp = null;
-             }
-           }
-           if(null == xmlHttp ) { // 初期化失敗時
-             return ;
-           }
-           //応答時の処理定義
-           xmlHttp.onreadystatechange = function(){
-              if(xmlHttp.readyState == 4 && xmlHttp.status == 200){
-                 var response=xmlHttp.responseText;
-                 console.log(response);
-              }
-           }
-           var SendData = get_SendData(key);
-           xmlHttp.open("POST","/joho/somu",true);
-           xmlHttp.setRequestHeader("content-type",
-               "application/x-www-form-urlencoded");
-           encodeURIComponent(SendData).replace(/%20/g,'+');
-           xmlHttp.send(SendData);
-         }
-     </script>
+          }
+      }
+    }
+    function get_BtnVal(SiteUrl){
+      const opts = document.getElementsByName(SiteUrl);
+      let subOpts;
+      let btnVal;
+      if(SiteUrl=="vs"){
+        subOpts = document.getElementsByName("ch");
+        btnVal = document.getElementsByName("search")[0].value;
+      }else{
+        subOpts = document.getElementsByName("ch2");
+        btnVal = document.getElementsByName("btnG")[0].value;
+      }
+      if(get_opt(opts,"shinsakai").checked==true && get_opt(subOpts,"db").checked==true){
+         tnVal = "横浜市DB検索";
+      }
+      return btnVal ;
+    }
+    function get_opt(optArray,str){
+      for (var i=0 ; i < optArray.length ; i++) {
+        if(str=="checked"){
+          if(optArray[i].checked==true){
+            return optArray[i];
+          }
+        }else{
+          if(optArray[i].value.includes(str)){
+            return optArray[i];
+          }
+        }
+      }
+    }
+    function get_SendData_z(key){
+      var param = 'gyouseiKoukai=on&gyouseiHogo=on&dokuhouKoukai=on&dokuhouHogo=on&kaijiSeikyu=on&teiseiSeikyu=on&teishiSeikyu=on&searchType=1&limitOption=1&openFlag=1&searchQuery=';
+      return param + key.replace(/[ 　]+/g,' ')
+    }
+    function ajax_z(key){
+      var xmlHttp  = null;
+      if(window.XMLHttpRequest){
+        xmlHttp = new XMLHttpRequest();
+      } else { //IE6とIE7の場合
+        if(windows.ActiveXObject){
+          xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+        } else {
+          xmlHttp = null;
+        }
+      }
+      if(null == xmlHttp ) { // 初期化失敗時
+        return ;
+      }
+      //応答時の処理定義
+      xmlHttp.onreadystatechange = function(){
+        if(xmlHttp.readyState == 4 && xmlHttp.status == 200){
+          var response=xmlHttp.responseText;
+          console.log(response);
+        }
+      }
+      var SendData = get_SendData(key);
+      xmlHttp.open("POST","/joho/somu",true);
+      xmlHttp.setRequestHeader("content-type",
+          "application/x-www-form-urlencoded");
+      encodeURIComponent(SendData).replace(/%20/g,'+');
+      xmlHttp.send(SendData);
+    }
+  </script>
 </head>
-
 <body>
-<a name="top"> </a>
+  <a name="top"> </a>
+  <div class="kadou_jikan">※ このサイトは午後10時から午前8時までの間はスリープ状態になります。その時間帯にこのサイトにアクセスすると、スリープから復帰するまでに10数秒お待ちいただくことになります。一度動き出せば普通に応答します。30分間アクセスがないと再びスリープ状態に移行します。運用経費を節約するためです。ご不便をおかけしますが、ご了承ください。</div>
+  <div class="top_link"><a href='https://www.city.yokohama.lg.jp/index.html'>横浜市公式サイト</a> / <a href='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/'>横浜市市民情報室</a></div>
+  <h1 class="header">横浜市例規集、ほか各種検索</h1>
+  <div class="link">
+    <p class="ma">
+       <a href="https://toshin-kensaku.herokuapp.com/">横浜市答申データベース検索システム</a>
+    </p>
+    <p class="ma">
+       <a href="https://drweb.city.yokohama.lg.jp/">横浜市行政文書目録検索</a>
+    </p>
+    <p class="ma">
+       <a href="https://elaws.e-gov.go.jp/search/elawsSearch/elaws_search/lsg0100/">国の法令を検索</a>　（総務省のHP。法令データ提供システム）
+    </p>
+    <p class="ma"><a href="https://www.courts.go.jp/app/hanrei_jp/search1">判例検索システム</a>　（最高裁判所のHP）</p>
+    <p>
+       <a href="https://pyramid-yokohama.herokuapp.com">横浜市の人口ピラミッド（区別、町丁別）</a>
+    </p>
+  </div>
 
-<div class="kadou_jikan">※ このサイトは午後10時から午前8時までの間はスリープ状態になります。その時間帯にこのサイトにアクセスすると、スリープから復帰するまでに10数秒お待ちいただくことになります。一度動き出せば普通に応答します。30分間アクセスがないと再びスリープ状態に移行します。運用経費を節約するためです。ご不便をおかけしますが、ご了承ください。</div>
-
-<div class="top_link"><a href='https://www.city.yokohama.lg.jp/index.html'>横浜市公式サイト</a> / <a href='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/'>横浜市市民情報室</a></div>
-
-<h1 class="header">横浜市例規集、ほか各種検索</h1>
-
-
-<div class="link">
- <p class="ma">
-    <a href="https://toshin-kensaku.herokuapp.com/">横浜市答申データベース検索システム</a>
- </p>
- <p class="ma">
-    <a href="https://drweb.city.yokohama.lg.jp/">横浜市行政文書目録検索</a>
- </p>
- <p class="ma">
-    <a href="https://elaws.e-gov.go.jp/search/elawsSearch/elaws_search/lsg0100/">国の法令を検索</a>　（総務省のHP。法令データ提供システム）
- </p>
- <p class="ma"><a href="https://www.courts.go.jp/app/hanrei_jp/search1">判例検索システム</a>　（最高裁判所のHP）</p>
- <p>
-    <a href="https://pyramid-yokohama.herokuapp.com">横浜市の人口ピラミッド（区別、町丁別）</a>
- </p>
-</div>
-
-<a name="toshin"></name>
-<div class="main">
-<!-- Begin Yahoo Search Form -->
-<form name='formYahoo' onSubmit='return addstring("vs")' action="https://search.yahoo.co.jp/search" method="get" style="margin:0;padding:0;" target="_blank">
-   <table><tr valign=top>
-     <td width=125px align=center>
-      <a href="https://www.yahoo.co.jp/" target="_blank">
-        <img src="https://i.yimg.jp/images/search/guide/searchbox/080318/ysearch_logo_85_22.gif" alt="Yahoo! JAPAN" style="border:none;vertical-align:middle;padding:0;border:0;" width="85" height="22">
-      </a>
-     </td>
-     <td>
-      <input type="text" name="p" size="40" id="yahoo_text_box" onchange="sync(this.id,this.value)">
-      <input type="hidden" name="fr" value="ysiwb">
-      <input type="hidden" name="ei" value="UTF-8">
-      <input type=submit name=search value="yahoo 検索">
-      <input type="button" value='検索語を元に戻す' onclick="clear_quotation()">
-      <input type="button" value='クリア' onclick="clear_contents()">
-
-      <br>
-
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://cgi.city.yokohama.lg.jp/somu/reiki/reiki_honbun" checked> 横浜市例規集を検索 </p>
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/shikai"> 横浜市会HPを検索</p>
-   <p> <input name="vs" type="radio" onchange="sync(this.name,this.value)" value=""> ウェブ全体を検索</p>
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho"> 市民情報室公開HPを検索</p>
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/hogo/hogoshingikai/shingikaikaigiroku.files"> 個人情報保護審議会会議録を検索</p>
-   <p class="ma"><strong>【情報公開】</strong></p>
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai"> 横浜市の答申を検索　⇒<a href="https://toshin-kensaku.herokuapp.com/">DB検索システム</a></p>
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="soumusyo"> 国の答申を検索（国のDB検索で検索) </p>
-   <div class="comment">※ 国のシステムでは検索結果を一つ一つ開けないと検索語句がどのように使われているのか確認することができませんが、ここでは、国のシステムを拡張し、検索語句の前後の文章を一覧することができる独自の検索結果画面を表示します。</div>
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="tokyo"> 東京都の答申を検索（東京都のDB検索で検索）</p>
-   <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value=" "> 全国の答申を検索</p>
-    </font>
-  </td></tr></table>
- </form>
-<!-- End Yahoo! Search Form -->
-<br>
-<!-- SiteSearch Google -->
-   <form name='formGoogle' onSubmit='return addstring("sitesearch")' method=get action="https://www.google.co.jp/search" style="margin:0;padding:0;" target="_blank">
-     <table><tr valign=top>
-
-       <td width=125px align=center>
-         <a href="https://www.google.co.jp/">
-           <img src="https://www.google.com/logos/Logo_40wht.gif" border="0" alt="Google" align="absmiddle">
-         </a>
-       </td>
-       <td>
-         <input type=text name=q size=40 maxlength=255 value="" id="google_text_box" onchange="sync(this.id,this.value)">
-         <input type=hidden name=ie value=UTF-8>
-         <input type=hidden name=oe value=UTF-8>
-         <input type=hidden name=hl value="ja" id=hl>
-         <input type=submit name=btnG value="Google 検索">
-         <input type="button" value='検索語を元に戻す' onclick="clear_quotation()">
-         <input type="button" value='クリア' onclick="clear_contents()">
-         <input type=hidden name=domains value='https://www.city.yokohama.lg.jp/shikai/' id=domains>
-
-         <br>
-
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value="https://cgi.city.yokohama.lg.jp/somu/reiki/reiki_honbun" checked> 横浜市例規集を検索</p>         
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='https://www.city.yokohama.lg.jp/shikai'> 横浜市会HPを検索</p>
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value=""> ウェブ全体を検索</p>
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho'> 市民情報室公開HPを検索</p>         
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/hogo/hogoshingikai/shingikaikaigiroku.files"> 個人情報保護審議会会議録を検索</p>
-         <p class="ma"> <strong>【情報公開】</strong></p>
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai'> 横浜市の答申を検索　⇒<a href="https://toshin-kensaku.herokuapp.com/">DB検索システム</a></p>
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='soumusyo'> 国の答申を検索（国のDB検索で検索）</p>
-         <div class="comment">※ 国のシステムでは検索結果を一つ一つ開けないと検索語句がどのように使われているのか確認することができませんが、ここでは、国のシステムを拡張し、検索語句の前後の文章を一覧することができる独自の検索結果画面を表示します。</div>
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value='tokyo'> 東京都の答申を検索（東京都のDB検索で検索）</p>
-         <p><input type=radio name=sitesearch onchange="sync(this.name,this.value)" value=' '> 全国の答申を検索</p>
-       </td></tr></table>
-   </form>
-
-<!-- SiteSearch Google -->
-
-</div>
-
-<div style="text-align:center;font-size:11pt;font-style:italic;">
-  <hr style="margin:5em auto 1em auto;width:80%;">
-  <address>
+  <a name="toshin"></name>
+  <div class="main">
+    <!-- Begin Yahoo Search Form -->
+    <form name='formYahoo' onSubmit='return addstring("vs")' action="https://search.yahoo.co.jp/search" method="get" style="margin:0;padding:0;" target="_blank">
+      <table><tr valign=top>
+        <td width=125px align=center>
+          <a href="https://www.yahoo.co.jp/" target="_blank">
+            <img src="https://i.yimg.jp/images/search/guide/searchbox/080318/ysearch_logo_85_22.gif" alt="Yahoo! JAPAN" style="border:none;vertical-align:middle;padding:0;border:0;" width="85" height="22">
+          </a>
+        </td>
+        <td>
+          <input type="text" name="p" size="40" id="yahoo_text_box" onchange="sync(this.id,this.value)">
+          <input type="hidden" name="fr" value="ysiwb">
+          <input type="hidden" name="ei" value="UTF-8">
+          <input type="submit" name="search" value="yahoo 検索">
+          <input type="button" value="検索語を元に戻す" onclick="clear_quotation()">
+          <input type="button" value="クリア" onclick="clear_contents()">
+          <br>
+          <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://cgi.city.yokohama.lg.jp/somu/reiki/reiki_honbun" checked> 横浜市例規集を検索 </p>
+          <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/shikai"> 横浜市会HPを検索</p>
+          <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value=""> ウェブ全体を検索</p>
+          <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho"> 市民情報室公開HPを検索</p>
+          <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/hogo/hogoshingikai/shingikaikaigiroku.files"> 個人情報保護審議会会議録を検索</p>
+          <p class="ma"><strong>【情報公開】</strong></p>
+          <p><input name="vs" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai"> 横浜市の答申を検索
+            <span class="small">(
+              <input name="ch" type="radio" value="db" checked onchange="change_opt(this.name,this.value)">DB検索,
+              <input name="ch" type="radio" value="yahoo" onchange="change_opt(this.name,this.value)">Yahoo検索
+            )</span>
+            　⇒<a href="https://toshin-kensaku.herokuapp.com/">DB検索システム(詳細検索画面)</a>
+          </p>
+          <p><input name="vs" type="radio" value="soumusyo" onchange="sync(this.name,this.value)"> 国の答申を検索（国のDB検索で検索) </p>
+          <div class="comment">※ 国のシステムでは検索結果を一つ一つ開けないと検索語句がどのように使われているのか確認することができませんが、ここでは、国のシステムを拡張し、検索語句の前後の文章を一覧することができる独自の検索結果画面を表示します。</div>
+          <p><input name="vs" type="radio" value="tokyo" onchange="sync(this.name,this.value)"> 東京都の答申を検索（東京都のDB検索で検索）</p>
+          <p><input name="vs" type="radio" value=" " onchange="sync(this.name,this.value)"> 全国の答申を検索</p>
+        </td>
+      </tr></table>
+    </form>
+    <!-- End Yahoo! Search Form -->
+    <br>
+    <!-- SiteSearch Google -->
+    <form name='formGoogle' onSubmit='return addstring("sitesearch")' method=get action="https://www.google.co.jp/search" style="margin:0;padding:0;" target="_blank">
+      <table><tr valign=top>
+        <td width=125px align=center>
+          <a href="https://www.google.co.jp/">
+            <img src="https://www.google.com/logos/Logo_40wht.gif" border="0" alt="Google" align="absmiddle">
+          </a>
+        </td>
+        <td>
+          <input type="text" name="q" size=40 maxlength=255 value="" id="google_text_box" onchange="sync(this.id,this.value)">
+          <input type="hidden" name="ie" value="UTF-8">
+          <input type="hidden" name="oe" value="UTF-8">
+          <input type="hidden" name="hl" value="ja" id="hl">
+          <input type=submit name="btnG" value="Google 検索">
+          <input type="button" value="検索語を元に戻す" onclick="clear_quotation()">
+          <input type="button" value="クリア" onclick="clear_contents()">
+          <input type="hidden" name="domains" value='https://www.city.yokohama.lg.jp/shikai/' id=domains>
+          <br>
+          <p><input name="sitesearch" type="radio" onchange="sync(this.name,this.value)" value="https://cgi.city.yokohama.lg.jp/somu/reiki/reiki_honbun" checked> 横浜市例規集を検索</p>         
+          <p><input name="sitesearch" type="radio" onchange="sync(this.name,this.value)" value='https://www.city.yokohama.lg.jp/shikai'> 横浜市会HPを検索</p>
+          <p><input name="sitesearch" type="radio" onchange="sync(this.name,this.value)" value=""> ウェブ全体を検索</p>
+          <p><input name="sitesearch" type="radio" onchange="sync(this.name,this.value)" value='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho'> 市民情報室公開HPを検索</p>         
+          <p><input name="sitesearch" type="radio" onchange="sync(this.name,this.value)" value="https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/hogo/hogoshingikai/shingikaikaigiroku.files"> 個人情報保護審議会会議録を検索</p>
+          <p class="ma"> <strong>【情報公開】</strong></p>
+          <p><input name="sitesearch" type="radio" onchange="sync(this.name,this.value)" value='https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai'> 横浜市の答申を検索
+            <span class="small">(
+              <input name="ch2" type="radio" value="db" checked onchange="change_opt(this.name,this.value)">DB検索,
+              <input name="ch2" type="radio" value="google" onchange="change_opt(this.name,this.value)">Google検索
+            )</span>
+            　⇒<a href="https://toshin-kensaku.herokuapp.com/">DB検索システム(詳細検索画面)</a></p>
+          <p><input name="sitesearch" type="radio" value='soumusyo' onchange="sync(this.name,this.value)"> 国の答申を検索（国のDB検索で検索）</p>
+          <div class="comment">※ 国のシステムでは検索結果を一つ一つ開けないと検索語句がどのように使われているのか確認することができませんが、ここでは、国のシステムを拡張し、検索語句の前後の文章を一覧することができる独自の検索結果画面を表示します。</div>
+          <p><input name="sitesearch" type="radio" value='tokyo' onchange="sync(this.name,this.value)"> 東京都の答申を検索（東京都のDB検索で検索）</p>
+          <p><input name="sitesearch" type="radio" value=' ' onchange="sync(this.name,this.value)"> 全国の答申を検索</p>
+        </td>
+      </tr></table>
+    </form>
+  <!-- SiteSearch Google -->
+  </div>
+  <div style="text-align:center;font-size:11pt;font-style:italic;">
+    <hr style="margin:5em auto 1em auto;width:80%;">
+    <address>
       <span style="display:block;">
-          2024年3月2日更新
+          2024年3月6日更新
       </span>
       <span style="display:block;">
           問い合わせ、連絡先（不具合の報告、改良のアイディアをお寄せください.）
           - <a href="mailto:inuzuka0601&#64;gmail.com">inuzuka0601&#64;gmail.com</a>
       </span>
-        <span>
-          &copy;2024 INUZUKA Katsu.
-        </span>
-        <span>
-          All rights reserved.
-        </span>
-  </address>
-</div>
-
+      <span>
+        &copy;2024 INUZUKA Katsu.
+      </span>
+      <span>
+        All rights reserved.
+      </span>
+    </address>
+  </div>
 </body>
 </html>
