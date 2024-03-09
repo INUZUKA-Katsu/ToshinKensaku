@@ -77,7 +77,8 @@ class ToshinApp
       #そして折を見てHeroku環境にPushする。
       #temp_to_regular_folder if req.url.match(/localhost/)
     
-    elsif req.post? and param.keys.include? "joken"
+    elsif req.post? and req.path=="/return" and param.keys.include? "joken"
+    #検索結果画面から「戻る」ボタンで検索条件画面に戻るとき、フォームに前回の検索条件を設定して表示する。
       header["Content-Type"] = 'text/html'
       response               = get_index(param)
     #elsif req.path.include? ".css" or req.path.include? ".js"
