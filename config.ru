@@ -38,6 +38,7 @@ class ToshinApp
         # kensaku.rb の getData_arrange でリクエストデータを取得する。
         joken, j_str = getData_arrange(req.query_string)
       end
+      #p "joken => " + JSON.generate(joken)
       toshin = Toshin.new
       h = toshin.get_hinagata_data(joken)
       kensu = h.size

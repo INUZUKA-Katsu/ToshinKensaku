@@ -247,7 +247,7 @@ def postData_arrange(param)
     range = param["reportNoRange"]
     if range=="kan"
       joken[:num][:to]=num
-      j_str["答申番号"] += "〜第#{num}号"
+      j_str["答申番号"] += "第#{num}号"
     end
   end
   [ joken, j_str ]
@@ -290,8 +290,7 @@ class Toshin
        elsif joken[:num].class==Hash
          j = joken[:num]
          if j.keys.size==2
-           a = []
-           (j[:from]..j[:to]).each{|n| a<<n}
+           a = (j[:from]..j[:to]).to_a
            selected = selected.select{|h| (h[:num_array] & a).size>0 }
          elsif j.keys[0]==:from
            selected = selected.select{|h| j[:from].to_i <= h[:num_array].max.to_i }
@@ -309,11 +308,11 @@ class Toshin
        elsif joken[:yyyymmdd].class==Hash
          j = joken[:yyyymmdd]
          if j.keys.size==2
-           selected = selected.select{|h| (j[:from]..h[:to]).include?(h[:yyyymmdd])}
+           selected = selected.select{|h| h[:yyyymmdd].between?(j[:from],j[:to])}
          elsif j.keys[0]==:from
            selected = selected.select{|h| j[:from] <= h[:yyyymmdd]}
          elsif j.keys[0]==:to
-           selected = selected.select{|h| j[:to] >= h[:yyyymmdd]}
+           selected = selected.select{|h| h[:yyyymmdd] <= j[:to]}
          end
        end
     end
@@ -507,6 +506,7 @@ def get_index(param)
         #p str.match(/"#{k}" value="or".*/)[0]
       end
     when "bukai","jisshiKikan","reportDateFromEra","reportDateToEra","reportDateRange","reportNoRange"
+      #p h[k]
       str.sub!(/("#{h[k]}")>/, '\1 selected>') if h[k]!=""
     when
       str.sub!(/"#{k}"\s+value=""/, k+' value="'+h[k]+'"')
