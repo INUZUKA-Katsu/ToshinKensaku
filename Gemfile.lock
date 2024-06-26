@@ -50,10 +50,6 @@ GEM
     nokogiri (1.13.0)
       mini_portile2 (~> 2.7.0)
       racc (~> 1.4)
-    nokogiri (1.13.0-x86_64-darwin)
-      racc (~> 1.4)
-    nokogiri (1.13.0-x86_64-linux)
-      racc (~> 1.4)
     pdf-reader (2.8.0)
       Ascii85 (~> 1.0)
       afm (~> 0.2.1)
@@ -87,7 +83,7 @@ DEPENDENCIES
   rack
 
 RUBY VERSION
-   ruby 3.1.2p20
+   ruby 3.2.4p170
 
 BUNDLED WITH
-   2.3.7
+   2.5.14
