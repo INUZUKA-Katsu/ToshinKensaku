@@ -3,6 +3,8 @@ require_relative 'hinagata.rb'
 require_relative 'joho/soumu.rb'
 require 'cgi'
 require 'uri'
+require './send_nifty_mail'
+
 
 Encoding.default_external = "utf-8"
 
@@ -13,10 +15,10 @@ S3Client.new.fill_tmp_folder
 
 class ToshinApp
   #初期設定
-
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
-  	req     = Rack::Request.new(env)
+    begin
+    req     = Rack::Request.new(env)
     p "req.request_method => " + req.request_method
     p "req.query_string => " + req.query_string
     p "req.url => " + req.url
@@ -111,6 +113,12 @@ class ToshinApp
       response               = File.read('index.html')
     end
     [ 200, header, [response] ]
+
+    #例外処理
+    rescue => e
+      send_mail(( [e.message] << e.backtrace ).join("\n"))
+    end
+
   end
   def get_type(filename)
     case filename.match(/\.\w+$/)[0].downcase
@@ -138,5 +146,4 @@ end
 use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
 #use Rack::Static, :urls => ['/index.html','/js','/css','/image','/tmp'], :root => '.'
 use Rack::Static, :urls => {'/'=>'index.html'}, :root => '.'
-
 run ToshinApp.new

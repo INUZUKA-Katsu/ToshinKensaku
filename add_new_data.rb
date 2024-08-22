@@ -1,4 +1,3 @@
-
 $poppler = nil
 require 'kconv'
 require 'json'
@@ -9,6 +8,7 @@ if $poppler == true
   require 'poppler'
 end
 require 'aws-sdk-s3'
+require './send_nifty_mail'
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 Dest = "#{__dir__}/tmp/temp.pdf"
@@ -194,9 +194,10 @@ def get_midashi_data_from(text_file,s3)
       jorei = ""
     end
   rescue => e
-    p e.message
-    puts " ↑ get_midashi_data_from実行中のエラー"
-    puts str
+    err = [e.message] << e.backtrace 
+    err_str = err.join("\n")
+    puts err_str
+    send_mail(err_str)
   end
   #[ bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu ]
   h = Hash.new
@@ -210,32 +211,46 @@ def get_midashi_data_from(text_file,s3)
   h["seikyu"]=seikyu
   h
 end
-s3 = S3Client.new
-#midashi = JSON.parse(File.read("#{__dir__}/tmp/bango_hizuke_kikan.json"))
-midashi = JSON.parse(s3.read("bango_hizuke_kikan.json"))
-#保存済みの最新答申番号
-saved_max_num = midashi.map{|data| data["num_array"][0].to_i}.max
-p saved_max_num
-toshin_url, toshin_kenmei = get_bango_url_kenmei_after(saved_max_num)
-puts toshin_url
-puts toshin_kenmei
-toshin_url.keys.each do |num|
-  puts "num => " + num.to_s
-  file_name = get_text_from(URL+toshin_url[num], s3)
-  puts file_name
-  h = get_midashi_data_from(file_name, s3)
-  p h
-  puts 'h["bango"] => ' + h["bango"].to_s
-  h["num_array"] = get_num_array_from(h["bango"])
-  h["file_name"] = file_name
-  h["url"]       = toshin_url[num]
-  h["kenmei"]    = toshin_kenmei[num]
-  midashi << h
+
+begin
+  s3 = S3Client.new
+  #midashi = JSON.parse(File.read("#{__dir__}/tmp/bango_hizuke_kikan.json"))
+  midashi = JSON.parse(s3.read("bango_hizuke_kikan.json"))
+  #保存済みの最新答申番号
+  saved_max_num = midashi.map{|data| data["num_array"][0].to_i}.max
+  p "saved_max_num => " + saved_max_num.to_s
+  toshin_url, toshin_kenmei = get_bango_url_kenmei_after(saved_max_num)
+  if toshin_url==nil
+    puts "新しい答申はありませんでした。"  
+    exit
+  end
+  puts toshin_url
+  puts toshin_kenmei
+  
+  toshin_url.keys.each do |num|
+    puts "num => " + num.to_s
+    file_name = get_text_from(URL+toshin_url[num], s3)
+    puts file_name
+    h = get_midashi_data_from(file_name, s3)
+    p h
+    puts 'h["bango"] => ' + h["bango"].to_s
+    h["num_array"] = get_num_array_from(h["bango"])
+    h["file_name"] = file_name
+    h["url"]       = toshin_url[num]
+    h["kenmei"]    = toshin_kenmei[num]
+    midashi << h
+  end
+
+  midashi = midashi.sort_by{|h| h["num_array"][0].to_i}
+  #File.write("tmp/bango_hizuke_kikan.json",JSON.generate(midashi))
+  json = JSON.generate(midashi)
+  s3.write("bango_hizuke_kikan.json", json)
+  File.write("./text/bango_hizuke_kikan.json", json) #Heroku上では無効
+
+rescue SystemExit
+rescue => e
+  err = [e.message] << e.backtrace 
+  err_str = err.join("\n")
+  puts err_str
+  send_mail(err_str)
 end
-
-midashi = midashi.sort_by{|h| h["num_array"][0].to_i}
-#File.write("tmp/bango_hizuke_kikan.json",JSON.generate(midashi))
-json = JSON.generate(midashi)
-s3.write("bango_hizuke_kikan.json", json)
-File.write("./text/bango_hizuke_kikan.json", json) #Heroku上では無効
-
