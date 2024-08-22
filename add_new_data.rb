@@ -135,6 +135,8 @@ def get_text_from(url,s3)
   end
 end
 def get_num_array_from(bango)
+  puts bango
+  p bango
    if bango.match(/から/)
      res = bango.match(/(\d+)号から.*?(\d+)/)
      n = []
@@ -155,9 +157,9 @@ def get_midashi_data_from(text_file,s3)
   str = s3.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
   begin
     if ans1 = str.match(/.*様(?=横浜市情報公開・個人情報保護審査会会長|横浜市公文書公開審査会会長)/)
-      item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)](..元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
+      item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)].*([平成|令和]元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
       bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[2]        
-      jisshikikan = jisshikikan.gsub(/市長|議長|水道事業管理者|病院事業管理者|交通事業管理者|選挙管理委員会委員長|人事委員会委員長|監査委員|農業委員会会長|固定資産評価審査委員会委員長|理事長/,'\0 ').gsub(/様/,', ') 
+      jisshikikan = jisshikikan.gsub(/市長|議長|水道事業管理者|病院事業管理者|交通事業管理者|選挙管理委員会委員長|人事委員会委員長|監査委員|農業委員会会長|固定資産評価審査委員会委員長|理事長|消防長/,'\0 ').gsub(/様/,', ') 
     end
     if ans2 = str.match(/[\(（回]([^\(（)回]*?部会)[\)）]/)
       bukai = ans2[1]
@@ -193,7 +195,8 @@ def get_midashi_data_from(text_file,s3)
     end
   rescue => e
     p e.message
-    #p str
+    puts " ↑ get_midashi_data_from実行中のエラー"
+    puts str
   end
   #[ bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu ]
   h = Hash.new
@@ -217,8 +220,12 @@ toshin_url, toshin_kenmei = get_bango_url_kenmei_after(saved_max_num)
 puts toshin_url
 puts toshin_kenmei
 toshin_url.keys.each do |num|
+  puts "num => " + num.to_s
   file_name = get_text_from(URL+toshin_url[num], s3)
+  puts file_name
   h = get_midashi_data_from(file_name, s3)
+  p h
+  puts 'h["bango"] => ' + h["bango"].to_s
   h["num_array"] = get_num_array_from(h["bango"])
   h["file_name"] = file_name
   h["url"]       = toshin_url[num]
