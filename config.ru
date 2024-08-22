@@ -3,6 +3,7 @@ require_relative 'hinagata.rb'
 require_relative 'joho/soumu.rb'
 require 'cgi'
 require 'uri'
+require './send_nifty_mail'
 
 Encoding.default_external = "utf-8"
 
@@ -139,4 +140,8 @@ use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
 #use Rack::Static, :urls => ['/index.html','/js','/css','/image','/tmp'], :root => '.'
 use Rack::Static, :urls => {'/'=>'index.html'}, :root => '.'
 
-run ToshinApp.new
+begin
+  run ToshinApp.new
+rescue => e
+  send_nifty_mail( ([e.message]<<e.backtrace).join("\n") )
+end
