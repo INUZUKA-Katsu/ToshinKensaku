@@ -485,6 +485,7 @@ class Toshin
   end
 end
 
+#検索結果から検索画面に戻る際の処理
 def get_index(param)
   str = File.read("index.html")
   return str unless param.keys.include? "joken"
@@ -506,8 +507,7 @@ def get_index(param)
         #p str.match(/"#{k}" value="or".*/)[0]
       end
     when "bukai","jisshiKikan","reportDateFromEra","reportDateToEra","reportDateRange","reportNoRange"
-      #p h[k]
-      str.sub!(/("#{h[k]}")>/, '\1 selected>') if h[k]!=""
+      str.sub!(/.*#{k}.*?#{h[k]}"/m, '\0 selected') if h[k]!=""
     when
       str.sub!(/"#{k}"\s+value=""/, k+' value="'+h[k]+'"')
     end
