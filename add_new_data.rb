@@ -157,8 +157,10 @@ def get_midashi_data_from(text_file,s3)
   str = s3.read(text_file).encode("UTF-8", :invalid => :replace).gsub(/\s|　/,"").tr("０-９","0-9")
   begin
     if ans1 = str.match(/.*様(?=横浜市情報公開・個人情報保護審査会会長|横浜市公文書公開審査会会長)/)
-      item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)].*([平成|令和]元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
-      bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[2]        
+      #item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)].*([平成|令和]元?\d?\d?年\d\d?月\d\d?日).*?\d日(.*)様/).flatten
+      #bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[2]
+      item = ans1[0].scan(/[\(（](答申第[\d-]+号.*?)[）\)].*((平成|令和)(元|\d+)年\d{1,2}月\d{1,2}日).*?\d日(.*)様/).flatten  
+      bango,yyyymmdd,toshinbi,jisshikikan = item[0],item[1].to_yyyymmdd,item[1],item[4]      
       jisshikikan = jisshikikan.gsub(/市長|議長|水道事業管理者|病院事業管理者|交通事業管理者|選挙管理委員会委員長|人事委員会委員長|監査委員|農業委員会会長|固定資産評価審査委員会委員長|理事長|消防長/,'\0 ').gsub(/様/,', ') 
     end
     if ans2 = str.match(/[\(（回]([^\(（)回]*?部会)[\)）]/)
