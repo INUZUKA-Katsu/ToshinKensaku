@@ -4,6 +4,9 @@ require "net/https"
 require 'open-uri'
 require 'pdf-reader'
 require 'aws-sdk-s3'
+require 'parallel'
+
+STDOUT.sync = true
 
 class Hash
   def key_to_sym()
@@ -49,7 +52,6 @@ class S3Client
     thread = []
     (s3_files-tmp_files).each do |f|
       thread << Thread.new do
-        p f
         File.write("./tmp/"+f,read(f))
       end
     end
@@ -57,7 +59,7 @@ class S3Client
   end
 end
 def postData_arrange(param)
-  p param
+  #p param
   joken = Hash.new
   j_str = Hash.new
   if param["searchQuery"]!=""
@@ -378,7 +380,6 @@ class Toshin
   end
   def get_hinagata_data(joken)
     if joken.keys.include? :freeWord
-      #p :step1
       selected = freeWord_search(joken)
     else
       selected = search(joken)
@@ -457,31 +458,75 @@ class Toshin
     #検索語に含まれる数字をすべて半角に変換する。
     word_ary.map!{|w| w.tr("０-９","0-9")}
     res =  []
-    #Herokuのリソースエラーにならないようにスレッド数を200に制限.
     selected = search(joken)
-    n = (selected.size/200.0).ceil
-    n.times do |i|
-      thread = []
-      st = i*200
-      selected[st,200].each do |h|
-        thread << Thread.new do
-          file_name = h[:file_name]
-          begin
-            str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
-          rescue
-            p file_name + "の読み込みエラー"
-            str = " "
+    results = Parallel.map(selected, in_threads: Etc.nprocessors) do |h|
+      p "処理中: PID: #{Process.pid}"
+      file_name = h[:file_name]
+      retry_num = 0
+      begin
+        str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
+      rescue
+        if File.exist?("./tmp/"+file_name)
+          retry_num += 1
+          if retry_num < 5
+            p file_name + "の読み込みエラー ⇒ リトライします!(#{retry_num}回目)"
+            retry
+          else
+            p file_name + "を読み込めませんでした!"
           end
-          matched_range = exec_search(str,word_ary,type,range_joken)
-          if matched_range
-            h[:matched_range] = matched_range
-            res << h
-          end
+        else
+          p file_name + "の読み込みエラー ファイルがありません!"
         end
+        str = " "
       end
-      thread.each(&:join)
+      matched_range = exec_search(str,word_ary,type,range_joken)
+      if matched_range
+        #h[:matched_range] = matched_range
+        h.merge(matched_range: matched_range)  # `merge` を使って新しいハッシュを返す
+      else
+        nil
+      end
     end
-    res
+    # nil を除外
+    results = results.compact!
+    #File.write("parallel_result.json", JSON.generate(results)) #debug用
+
+    #Herokuのリソースエラーにならないようにスレッド数を200に制限.
+    #n = (selected.size/200.0).ceil
+    #n.times do |i|
+    #  thread = []
+    #  st = i*200
+    #  selected[st,200].each do |h|
+    #    thread << Thread.new do
+    #      file_name = h[:file_name]
+    #      retry_num = 0
+    #      begin
+    #        str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
+    #      rescue
+    #        if File.exist?("./tmp/"+file_name)
+    #          retry_num += 1
+    #          if retry_num < 5
+    #            p file_name + "の読み込みエラー ⇒ リトライします!(#{retry_num}回目)"
+    #            retry
+    #          else
+    #            p file_name + "を読み込めませんでした!"
+    #          end
+    #        else
+    #          p file_name + "の読み込みエラー ファイルがありません!"
+    #        end
+    #        str = " "
+    #      end
+    #      matched_range = exec_search(str,word_ary,type,range_joken)
+    #      if matched_range
+    #        h[:matched_range] = matched_range
+    #        res << h
+    #      end
+    #    end
+    #  end
+    #  thread.each(&:join)
+    #end
+    ##File.write("thread_result.json", JSON.generate(res))  #debug用
+    #res
   end
 end
 

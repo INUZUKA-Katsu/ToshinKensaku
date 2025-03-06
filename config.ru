@@ -3,6 +3,7 @@ require_relative 'hinagata.rb'
 require_relative 'joho/soumu.rb'
 require 'cgi'
 require 'uri'
+require 'time'
 require './send_nifty_mail'
 
 Encoding.default_external = "utf-8"
@@ -12,18 +13,50 @@ URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokok
 FileUtils.cp(Dir.glob("./text/*.*"),"./tmp")
 S3Client.new.fill_tmp_folder
 
+class TimerMiddleware
+  def initialize(app)
+    @app = app
+  end
+  def call(env)
+    start_time = Time.now
+    status, headers, response = @app.call(env)  # 次のミドルウェアまたはアプリへ
+    elapsed_time = Time.now - start_time
+    puts "Response Time: #{elapsed_time} sec"
+    [status, headers, response]  # レスポンスを返す
+  end
+end
+class AddNewData
+  def initialize(app)
+    @app = app
+    @time_stamp = "#{__dir__}/tmp/search_new_pdf.txt"
+  end
+  def call(env)
+    request = Rack::Request.new(env)
+    if request.path == '/'
+      begin
+        if !File.exist?(@time_stamp) or ( Time.parse(File.read(@time_stamp))+24*60*60 < Time.now )
+          pid = Process.spawn("ruby add_new_data.rb", out: STDOUT, err: STDERR)
+          Process.detach(pid)
+        end
+      rescue => e
+        puts "Error: #{e.message}"
+      end
+    end
+    @app.call(env)  # 次のミドルウェアまたはアプリへレスポンスを返す
+  end
+end
+
 class ToshinApp
   #初期設定
-
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
   	req     = Rack::Request.new(env)
-    p "req.request_method => " + req.request_method
-    p "req.query_string => " + req.query_string
-    p "req.url => " + req.url
+    #p "req.request_method => " + req.request_method
+    #p "req.query_string => " + req.query_string
+    #p "req.url => " + req.url
     #p "req.script_name => " + req.script_name
-    p "req.fullpath => " + req.fullpath
-    p "req.path => " + req.path
+    #p "req.fullpath => " + req.fullpath
+    #p "req.path => " + req.path
     param = req.POST()
     header  = Hash.new
     kensu = 0
@@ -136,10 +169,11 @@ class ToshinApp
     end
   end
 end
-use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
-#use Rack::Static, :urls => ['/index.html','/js','/css','/image','/tmp'], :root => '.'
-use Rack::Static, :urls => {'/'=>'index.html'}, :root => '.'
 
+use AddNewData
+use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
+use Rack::Static, :urls => {'/'=>'/index.html'}, :root => '.'
+use TimerMiddleware
 begin
   run ToshinApp.new
 rescue => e

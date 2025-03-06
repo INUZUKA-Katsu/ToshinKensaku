@@ -10,6 +10,11 @@ end
 require 'aws-sdk-s3'
 require './send_nifty_mail'
 
+# ************* ログ出力 ********************
+puts "Daily task start at #{Time.now}"
+# ******************************************
+
+
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 Dest = "#{__dir__}/tmp/temp.pdf"
 
@@ -213,6 +218,9 @@ def get_midashi_data_from(text_file,s3)
   h["seikyu"]=seikyu
   h
 end
+def time_stamp()
+  File.write("#{__dir__}/tmp/search_new_pdf.txt",Time.now)
+end
 
 begin
   s3 = S3Client.new
@@ -223,7 +231,8 @@ begin
   p "saved_max_num => " + saved_max_num.to_s
   toshin_url, toshin_kenmei = get_bango_url_kenmei_after(saved_max_num)
   if toshin_url==nil
-    puts "新しい答申はありませんでした。"  
+    puts "新しい答申はありませんでした。"
+    time_stamp
     exit
   end
   puts toshin_url
@@ -247,8 +256,8 @@ begin
   #File.write("tmp/bango_hizuke_kikan.json",JSON.generate(midashi))
   json = JSON.generate(midashi)
   s3.write("bango_hizuke_kikan.json", json)
-  File.write("./text/bango_hizuke_kikan.json", json) #Heroku上では無効
-
+  File.write("./text/bango_hizuke_kikan.json", json) # Heroku上では無効
+  time_stamp
 rescue SystemExit
 rescue => e
   err = [e.message] << e.backtrace 
@@ -256,3 +265,7 @@ rescue => e
   puts err_str
   send_mail(err_str)
 end
+
+# ************* ログ出力 ********************
+puts "Task ended at #{Time.now}"
+# ******************************************
