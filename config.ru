@@ -1,4 +1,4 @@
-kensaku_engine = :ripgrep
+kensaku_engine = :origin
 case kensaku_engine
 when :precut_threads
   require_relative 'kensaku_with_ripgrep_and_precut_threads.rb'
