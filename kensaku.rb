@@ -51,11 +51,11 @@ class S3Client
     tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
     thread = []
     (s3_files-tmp_files).each do |f|
-      thread << Thread.new do
+      #thread << Thread.new do
         File.write("./tmp/"+f,read(f))
-      end
+      #end
     end
-    thread.each(&:join)
+    #thread.each(&:join)
   end
 end
 def postData_arrange(param)
