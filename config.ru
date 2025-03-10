@@ -1,14 +1,4 @@
-kensaku_engine = :origin
-case kensaku_engine
-when :precut_threads
-  require_relative 'kensaku_with_ripgrep_and_precut_threads.rb'
-when :precut
-  require_relative 'kensaku_with_ripgrep_and_precut.rb'
-when :ripgrep
-  require_relative 'kensaku_with_ripgrep.rb'
-else
-  require_relative 'kensaku.rb'
-end
+require_relative 'kensaku.rb'
 require_relative 'hinagata.rb'
 require_relative 'joho/soumu.rb'
 require 'cgi'
