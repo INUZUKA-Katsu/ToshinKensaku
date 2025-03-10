@@ -1,4 +1,14 @@
-require_relative 'kensaku.rb'
+kensaku_engine = :precut
+case kensaku_engine
+when :precut_threads
+  require_relative 'kensaku_with_ripgrep_and_precut_threads.rb'
+when :precut
+  require_relative 'kensaku_with_ripgrep_and_precut.rb'
+when :ripgrep
+  require_relative 'kensaku_with_ripgrep.rb'
+else
+  require_relative 'kensaku.rb'
+end
 require_relative 'hinagata.rb'
 require_relative 'joho/soumu.rb'
 require 'cgi'
@@ -10,7 +20,7 @@ Encoding.default_external = "utf-8"
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 
-FileUtils.cp(Dir.glob("./text/*.*"),"./tmp")
+#tmpフォルダに不足するファイルをダウンロードする.
 S3Client.new.fill_tmp_folder
 
 class TimerMiddleware

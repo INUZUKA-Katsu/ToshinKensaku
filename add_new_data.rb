@@ -14,6 +14,7 @@ require './send_nifty_mail'
 puts "Daily task start at #{Time.now}"
 # ******************************************
 
+Encoding.default_external = "utf-8"
 
 URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
 Dest = "#{__dir__}/tmp/temp.pdf"
@@ -259,6 +260,7 @@ begin
   File.write("./text/bango_hizuke_kikan.json", json) # Heroku上では無効
   time_stamp
 rescue SystemExit
+  time_stamp
 rescue => e
   err = [e.message] << e.backtrace 
   err_str = err.join("\n")
