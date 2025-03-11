@@ -52,7 +52,6 @@ class S3Client
     tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
     (s3_files-tmp_files).each do |f|
         File.write("./tmp/"+f,read(f))
-      end
     end
     set_each_range_txt
   end
