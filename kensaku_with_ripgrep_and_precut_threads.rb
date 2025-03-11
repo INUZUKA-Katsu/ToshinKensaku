@@ -5,6 +5,7 @@ require 'open-uri'
 require 'aws-sdk-s3'
 require 'parallel'
 require 'concurrent'
+require "#{__dir__}/set_each_range_text"
 
 STDOUT.sync = true
 Encoding.default_external = "utf-8"
@@ -51,8 +52,8 @@ class S3Client
   def fill_tmp_folder
     s3_files = get_list.map{|f| f.sub("toshin/","")}
     tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
-    # スレッド数を64に制限したプールを作成
-    pool = Concurrent::ThreadPoolExecutor.new(max_threads: 64)
+    # スレッド数を5に制限したプールを作成
+    pool = Concurrent::ThreadPoolExecutor.new(max_threads: 5)
     (s3_files-tmp_files).each do |f|
       pool.post do
         File.write("./tmp/"+f,read(f))
@@ -70,7 +71,7 @@ class S3Client
     #  end
     #end
     #thread.each(&:join)
-    load "#{__dir__}/set_each_range_text.rb"
+    set_each_range_text
   end
 end
 def postData_arrange(param)

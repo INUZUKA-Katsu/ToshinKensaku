@@ -16,10 +16,10 @@ def text_range(joken)
   end
 end
 
-def set_each_range_txt()
+def set_each_range_text()
   puts :start_make_range_text
   err=[]
-  path_array = Dir.glob("/Users/inuzuka0601/Sites/Toshin/tmp/*.txt").select{|f| f.encode("UTF-8","UTF-8-MAC").match(/号(まで)?\.txt/)}
+  path_array = Dir.glob("#{__dir__}/tmp/*.txt").select{|f| f.encode("UTF-8",UTF-8-MAC").match(/号(まで)?\.txt/)}
   joken_array = ["ketsuron","jisshikikan","seikyunin","shinsakai","shinsakailast"]
   joken_array.each do |joken|
     path_array.each do |path|

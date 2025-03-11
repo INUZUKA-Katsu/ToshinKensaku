@@ -6,7 +6,7 @@ require 'aws-sdk-s3'
 require 'parallel'
 require 'concurrent'
 require 'open3'
-
+require "#{__dir__}/set_each_range_text"
 
 STDOUT.sync = true
 Encoding.default_external = "utf-8"
@@ -53,27 +53,26 @@ class S3Client
   def fill_tmp_folder
     s3_files = get_list.map{|f| f.sub("toshin/","")}
     tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
-    ## スレッド数を64に制限したプールを作成
-    #pool = Concurrent::ThreadPoolExecutor.new(max_threads: 64)
-    #(s3_files-tmp_files).each do |f|
-    #  pool.post do
-    #    File.write("./tmp/"+f,read(f))
-    #    sleep 0.5
-    #  end
-    #end
-    ## プールが終了するのを待つ
-    #pool.shutdown
-    #pool.wait_for_termination
-    #thread = []
+    # スレッド数を5に制限したプールを作成
+    pool = Concurrent::ThreadPoolExecutor.new(max_threads: 5)
     (s3_files-tmp_files).each do |f|
-    #  thread << Thread.new do
+      pool.post do
         File.write("./tmp/"+f,read(f))
+        sleep 0.5
+      end
+    end
+    # プールが終了するのを待つ
+    pool.shutdown
+    pool.wait_for_termination
+    #thread = []
+    #(s3_files-tmp_files).each do |f|
+    #  thread << Thread.new do
+    #    File.write("./tmp/"+f,read(f))
     #   sleep 0.05
     #  end
-    end
+    #end
     #thread.each(&:join)
-    p 'load "#{__dir__}/set_each_range_text.rb"' 
-    load "#{__dir__}/set_each_range_text.rb"
+    set_each_range_text
   end
 end
 def postData_arrange(param)
@@ -289,6 +288,9 @@ class Toshin
   def initialize
     @s3 = S3Client.new
     @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
+  end
+  def update(new_midashi)
+    @midashi = new_midashi
   end
   #フリーワード以外の条件から対象ファイルを絞り込む。
   def search(joken) #jokenはハッシュ
