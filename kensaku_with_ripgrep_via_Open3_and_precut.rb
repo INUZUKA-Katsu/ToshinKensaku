@@ -2,11 +2,14 @@ require 'json'
 require 'kconv'
 require "net/https"
 require 'open-uri'
-require 'pdf-reader'
 require 'aws-sdk-s3'
 require 'parallel'
+require 'concurrent'
+require 'open3'
+
 
 STDOUT.sync = true
+Encoding.default_external = "utf-8"
 
 class Hash
   def key_to_sym()
@@ -46,16 +49,30 @@ class S3Client
     end
     res
   end
+  # 起動時にtmpフォルダを確認し、不足するファイルをダウンロードする。
   def fill_tmp_folder
     s3_files = get_list.map{|f| f.sub("toshin/","")}
     tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
-    #thread = []
+    # スレッド数を64に制限したプールを作成
+    pool = Concurrent::ThreadPoolExecutor.new(max_threads: 64)
     (s3_files-tmp_files).each do |f|
-      #thread << Thread.new do
+      pool.post do
         File.write("./tmp/"+f,read(f))
-      #end
+        sleep 0.5
+      end
     end
+    # プールが終了するのを待つ
+    pool.shutdown
+    pool.wait_for_termination
+    #thread = []
+    #(s3_files-tmp_files).each do |f|
+    #  thread << Thread.new do
+    #    File.write("./tmp/"+f,read(f))
+    #    sleep 0.05
+    #  end
+    #end
     #thread.each(&:join)
+    load "#{__dir__}/set_each_range_text.rb"
   end
 end
 def postData_arrange(param)
@@ -271,8 +288,8 @@ class Toshin
   def initialize
     @s3 = S3Client.new
     @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
-    File.write("#{__dir__}/tmp/bango_hizuke_kikan.json", JSON.generate(@midashi))
   end
+  #フリーワード以外の条件から対象ファイルを絞り込む。
   def search(joken) #jokenはハッシュ
     selected = @midashi
     if joken.keys.include? :jorei
@@ -281,12 +298,17 @@ class Toshin
          joken[:jorei].include?(h[:jorei])
        }
     end
+    p :s1
+    p selected.size
     if joken.keys.include? :seikyu and joken[:seikyu] != "開示請求訂正請求利用停止請求"
        selected = selected.select{|h|
          #p "joken[:seikyu].include?(h[:seikyu]) => " + joken[:seikyu] + " include? " + h[:seikyu]
          h[:seikyu]!="" and joken[:seikyu].include?(h[:seikyu])
        }
     end
+    p :s2
+    p selected.size
+
     if joken.keys.include? :num
        if joken[:num].class==String
          selected = selected.select{|h| h[:num_array].include?(joken[:num])}
@@ -302,9 +324,15 @@ class Toshin
          end
        end
     end
+    p :s3
+    p selected.size
+
     if joken.keys.include? :bango
        selected = selected.select{|h| h[:bango].include?(joken[:bango])}
     end
+    p :s4
+    p selected.size
+
     if joken.keys.include? :yyyymmdd
        if joken[:yyyymmdd].class==String
          selected = selected.select{|h| h[:yyyymmdd].include?(joken[:yyyymmdd])}
@@ -319,20 +347,35 @@ class Toshin
          end
        end
     end
+    p :s5
+    p selected.size
+
     if joken.keys.include? :toshinbi
        selected = selected.select{|h| h[:toshinbi].include?(joken[:toshinbi])}
     end
+    p :s6
+    p selected.size
+
     if joken.keys.include? :kikan
        selected = selected.select{|h| h[:jisshikikan].include?(joken[:kikan])}
     end
+    p :s7
+    p selected.size
+
     if joken.keys.include? :kikanQuery
        joken[:kikanQuery].each do |k|
          selected = selected.select{|h| h[:jisshikikan].include?(k)}
        end
     end
+    p :s8
+    p selected.size
+
     if joken.keys.include? :bukai
        selected = selected.select{|h| h[:bukai].include?(joken[:bukai])}
     end
+    p :s9
+    p selected.size
+
     if joken.keys.include? :bukaiQuery
        ary = []
        selected_ary = joken[:bukaiQuery].map{|bukai| selected.select{|h| h[:bukai].include? bukai}}
@@ -341,6 +384,9 @@ class Toshin
        end
        selected = ary
     end
+    p :s10
+    p selected.size
+
     if joken.keys.include? :iinQuery
        ary = []
        selected_ary = joken[:iinQuery].map{|iin| selected.select{|h| h[:iin].include? iin}}
@@ -379,6 +425,10 @@ class Toshin
   def get_url(bango)
     @midashi.find{|h| h[:bango]==bango}[:url]
   end
+
+  #########################################
+  #   メイン関数（config.ruから呼び出される）
+  #########################################
   def get_hinagata_data(joken)
     if joken.keys.include? :freeWord
       selected = freeWord_search(joken)
@@ -386,6 +436,8 @@ class Toshin
       selected = search(joken)
     end
     res = Hash.new
+    p "selected = freeWord_search(joken)"
+    p 'selected.size: ' + selected.size.to_s
     selected.each do |h|
       bango = h[:bango]
       h.delete(:bango)
@@ -396,139 +448,235 @@ class Toshin
       h.delete(:seikyu)
       res[bango] = h
     end
-    res
+    res   # config.ruに返す
   end
+
   def freeWord_search(joken)
+    def ripgrep(file_name_array, word_array, type)
+      # ファイルパスを構築
+      files = file_name_array.map { |file_name| "#{__dir__}/tmp/#{file_name}" }
+      if type == 'or'
+        # OR検索: 単語を | で結合した正規表現で一度に検索
+        search_terms = word_array.join('|')
+        stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_terms, *files)
+        matching_file_path_array = stdout.split("\n")
+      elsif type == 'and'
+        if word_array.size == 1
+          # 単語が1つの場合: 直接検索
+          search_terms = word_array[0]
+          stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_terms, *files)
+          matching_file_path_array = stdout.split("\n")
+        else
+          # 複数単語のAND検索: 各単語で順次フィルタリング
+          matching_file_path_array = files.dup # 初期候補は全ファイル
+          word_array.each do |word|
+            # 現在の候補ファイルに対してrgを実行
+            stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', word, *matching_file_path_array)
+            if status.success?
+              matching_file_path_array = stdout.split("\n")
+              break if matching_file_path_array.empty? # マッチがなくなれば終了
+            else
+              matching_file_path_array = [] # エラー時は空配列
+              break
+            end
+          end
+        end
+      else
+        # 不正なtypeの場合
+        matching_file_path_array = []
+      end
+      matching_file_path_array
+    end
     def text_range(joken)
-      honbun_end = '(.*?(委員.{3,10}){3}|.*?《参考》|.*?^( |　)*別表|.*?別表[0-9０-９]*( |　)*$|.*?別( |　)+表|.*?審査会の経過|.*)'
       case joken[:freeWordRange]
       when ""             ;  nil
       when "ketsuron"     ;  "審査会の結論.*?(?=((異議)?申立て|審査請求|申出)の趣旨)"
-      when "jisshikikan"  ;  "(理由|に関する)説明要旨.*?(?=((処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見)"
-      when "seikyunin"    ;  "((処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?(?=審査会の判断)"
-      when "shinsakai"    ;  '審査会の判断.*' + honbun_end
-      when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)*結論|(?<!審査会の)結( |　)*論\n).*?' + honbun_end
+      when "jisshikikan"  ;  "理由説明要旨.*?(?=((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見)"
+      when "seikyunin"    ;  "((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?(?=審査会の判断)"
+      when "shinsakai"    ;  '審査会の判断.*'
+      when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)*結論)(.*?(^( |　)*別表|別表[0-9０-９]*( |　)*$|別( |　)+表|審査会の経過)|.*)'
       else  nil
       end
     end
-    def reg_pattern(word_ary)
+    def reg_pattern(word_array)
       # 検索語が複数の時は、"[^\n]*(検索語1|検索語2|検索語3).*(検索語1|検索語2|検索語3).*?\n"
       # という正規表現をつくる。  
-        "[^\n]{0,100}(#{word_ary.join("|")})(.*(#{word_ary.join("|")}))?[^\n]{0,100}\n?"
+        "[^\n]{0,100}(#{word_array.join("|")})(.*(#{word_array.join("|")}))?[^\n]{0,100}\n?"
     end
-    def exec_search(str,word_ary,type,range_joken)
-      #審査会の判断など指定された範囲を切り出す。全角数字は半角に変換する。
-      if range_joken and ans = str.match(/#{range_joken}/m)
-        str = ans[0].tr("０-９","0-9")
-      else
-        str = str.tr("０-９","0-9")
-      end
-      case type
-      when "and"
-        #マッチしない語句が一つでもあればそのファイルは終了
-        word_ary.each do |k|
-          return nil unless str.match(/#{k}/m)
-        end
-      when "or"
-        #マッチする語句が一つもなければそのファイルは終了
-        res = nil
-        word_ary.each do |k|
-          res = true if str.match(/#{k}/m)
-        end
-        return nil unless res
-      end
-      #要求された語句を含むことを確認できたらパターンマッチしてマッチした部分を返す
-      #p :step4
+    #************** 答申のテキストから該当箇所を切り出す *****************
+    def exec_search(str,word_array,type)
+      #審査会の判断など指定された範囲を切り出す。
+      #if range_joken and ans = str.match(/#{range_joken}/m)
+      #  str = ans[0]
+      #end
+      #全角数字を半角に変換
+      str = str.tr("０-９","0-9")
+      #指定範囲に検索語句が含まれるか調べ、含まれない場合は除外
+      ########## ripgrepで仕分け済み ###########
+      #if range_joken
+      #  if type=='or'
+      #    #マッチする語句が一つもなければそのファイルは終了
+      #    res = nil
+      #    word_array.each do |k|
+      #      res = true if str.match(/#{k}/m)
+      #    end
+      #    return nil unless res
+      #    #return nil unless str.match(/#{word_array.join('|')}/)
+      #  else
+      #    #マッチしない語句が一つでもあればそのファイルは終了
+      #    word_array.each do |k|
+      #      return nil unless str.match(/#{k}/m)
+      #    end
+      #    #return nil unless str.match(/#{word_array.map{|w| "(?=.*#{w})"}.join()}/)
+      #  end
+      #end
+      #*** 各語句の前後200字を切り出し、つなげる ***
       begin
-      #str_range = str.match(/#{reg_pattern(word_ary)}/m)[0]
-      #str_range.scan(/[^\n]{0,100}#{word_ary.join("|")}(.*?#{word_ary.join("|")}[^\n]{0,100})?/).
-      #str_range.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/).
-      str.scan(/[^\n]{0,200}#{word_ary.join("|")}[^\n]{0,200}\n?/m).
-                map do |s|
-                  s.gsub!(/#{word_ary.join("|")}/m,'<strong>\&</strong>')
-                  s.chomp
-                end.
-                join("<br><br>")
+      #p "[^\n]{0,200}#{word_array.join('|')}[^\n]{0,200}\n?"
+        range_array = str.scan(/[^\n]{0,200}#{word_array.join("|")}[^\n]{0,200}\n?/m).
+                      map do |s|
+                        s.gsub!(/#{word_array.join("|")}/m,'<strong>\&</strong>')
+                        s.chomp
+                      end
+        str = range_array.join("<br><br>")
+        str
       rescue
-        #p reg_pattern(word_ary)
+        #p reg_pattern(word_array)
         #p str
       end
     end
-    word_ary,type,range_joken = joken[:freeWord],joken[:freeWordType],text_range(joken)
+
+    #***** ここから、検索の流れに入る。*****
+
+    #*** 下準備 ***
+    word_array,type = joken[:freeWord],joken[:freeWordType]
+    #puts "range_joken : #{range_joken}"
     #ユーザーが正規表現を使いやすくする。”\”は取り扱いが難しいので"¥"が使えるようにする。
-    word_ary.map!{|w| w.gsub('¥',"\\")}
+    word_array.map!{|w| w.gsub('¥',"\\")}
     #検索語に含まれる数字をすべて半角に変換する。
-    word_ary.map!{|w| w.tr("０-９","0-9")}
-    res =  []
+    word_array.map!{|w| w.tr("０-９","0-9")}
+
+    #******* フリーワード以外の条件でmidashi配列を絞り込む。*******
     selected = search(joken)
-    results = Parallel.map(selected, in_threads: Etc.nprocessors) do |h|
+    puts "答申ファイル数は #{@midashi.size} 件"
+    puts "search => 対象は #{selected.size} 件"
+    
+    #******* ripgrepで対象ファイルを絞り込む。*******************
+    if joken[:freeWordRange]==""
+      file_name_array = selected.map{|h| h[:file_name]}
+    else
+      #範囲条件があるとき
+      file_name_array = selected.map{|h|
+        if h[:file_name]
+          h[:file_name].sub(/\.txt/,"#{joken[:freeWordRange]}.txt")
+        else
+          p "h[:file_name]=nil"
+          p h
+        end 
+      }
+    end
+    file_path_array = ripgrep(file_name_array, word_array, type)
+    puts "ripgrep => 対象は #{file_path_array.size} 件"
+
+    file_path_array.each{|path| p path if path.size>100}
+    puts
+    puts
+
+    #p "file_path_array ↓"
+    #p file_path_array
+    #****** 対象ファイルによってmidashi配列を絞り込む *********
+    #file_name_array = file_path_array.map{|path| File.basename(path)}
+    #selected.select!{|h| file_name_array.include? h[:file_name]}
+    
+    #******* 対象ファイルから該当箇所を切り出す。******************
+    #res={}
+    #selected = selected.each do |h|
+    #  path = "#{__dir__}/tmp/#{h[:file_name]}"
+    #  str = File.read(path).encode("UTF-8", :invalid => :replace)
+    #  matched_range = exec_search(str,word_array,type,range_joken)
+    #  if matched_range
+    #    h[:matched_range] = matched_range
+    #  end
+    #end.select{|h| h.keys.include?(:matched_range)}
+    ##puts selected
+    #return selected
+if 1==1
+    #results = Parallel.map(selected, in_processes: Etc.nprocessors) do |h|
+    results = Parallel.map(file_path_array, in_processes: Etc.nprocessors) do |path|
       #p "処理中: PID: #{Process.pid}"
-      file_name = h[:file_name]
       retry_num = 0
       begin
-        str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
+        #path = "#{__dir__}/tmp/#{h[:file_name]}"
+        str = File.read(path).encode("UTF-8", :invalid => :replace)
       rescue
-        if File.exist?("./tmp/"+file_name)
+        if File.exist?(path)
           retry_num += 1
           if retry_num < 5
-            p file_name + "の読み込みエラー ⇒ リトライします!(#{retry_num}回目)"
+            p File.basename(path) + "の読み込みエラー ⇒ リトライします!(#{retry_num}回目)"
             retry
           else
-            p file_name + "を読み込めませんでした!"
+            p File.basename(path) + "を読み込めませんでした!"
           end
         else
-          p file_name + "の読み込みエラー ファイルがありません!"
+          p File.basename(path) + "の読み込みエラー ファイルがありません!"
         end
         str = " "
       end
-      matched_range = exec_search(str,word_ary,type,range_joken)
+      matched_range = exec_search(str,word_array,type)
       if matched_range
-        #h[:matched_range] = matched_range
-        h.merge(matched_range: matched_range)  # `merge` を使って新しいハッシュを返す
+        #h.merge({:matched_range => matched_range})  # `merge` を使って新しいハッシュを返す
+        file_name_origin = File.basename(path).sub(/(.*号(まで)?)(.+?)\.txt/,'\1.txt')
+        begin
+        selected.find{|h| h[:file_name] == file_name_origin}.
+                          merge({:matched_range => matched_range})
+        rescue =>e
+          p e.message
+        end
       else
         nil
       end
     end
-    # nil を除外
-    results = results.compact!
-    #File.write("parallel_result.json", JSON.generate(results)) #debug用
-
+    File.write("parallel_result.json", JSON.generate(results)) #debug用
+    return results.compact # nilを除外
+else
     #Herokuのリソースエラーにならないようにスレッド数を200に制限.
-    #n = (selected.size/200.0).ceil
-    #n.times do |i|
-    #  thread = []
-    #  st = i*200
-    #  selected[st,200].each do |h|
-    #    thread << Thread.new do
-    #      file_name = h[:file_name]
-    #      retry_num = 0
-    #      begin
-    #        str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
-    #      rescue
-    #        if File.exist?("./tmp/"+file_name)
-    #          retry_num += 1
-    #          if retry_num < 5
-    #            p file_name + "の読み込みエラー ⇒ リトライします!(#{retry_num}回目)"
-    #            retry
-    #          else
-    #            p file_name + "を読み込めませんでした!"
-    #          end
-    #        else
-    #          p file_name + "の読み込みエラー ファイルがありません!"
-    #        end
-    #        str = " "
-    #      end
-    #      matched_range = exec_search(str,word_ary,type,range_joken)
-    #      if matched_range
-    #        h[:matched_range] = matched_range
-    #        res << h
-    #      end
-    #    end
-    #  end
-    #  thread.each(&:join)
-    #end
-    ##File.write("thread_result.json", JSON.generate(res))  #debug用
-    #res
+    res=[]
+    n = (selected.size/200.0).ceil
+    n.times do |i|
+      thread = []
+      st = i*200
+      selected[st,200].each do |h|
+        thread << Thread.new do
+          file_name = h[:file_name]
+          retry_num = 0
+          begin
+            str = File.read("./tmp/"+file_name).encode("UTF-8", :invalid => :replace)
+          rescue
+            if File.exist?("./tmp/"+file_name)
+              retry_num += 1
+              if retry_num < 5
+                p file_name + "の読み込みエラー ⇒ リトライします!(#{retry_num}回目)"
+                retry
+              else
+                p file_name + "を読み込めませんでした!"
+              end
+            else
+              p file_name + "の読み込みエラー ファイルがありません!"
+            end
+            str = " "
+          end
+          matched_range = exec_search(str,word_array,type,range_joken)
+          if matched_range
+            h[:matched_range] = matched_range
+            res << h
+          end
+        end
+      end
+      thread.each(&:join)
+    end
+    #File.write("thread_result.json", JSON.generate(res))  #debug用
+    res
+end
   end
 end
 
