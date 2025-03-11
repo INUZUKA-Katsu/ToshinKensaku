@@ -72,6 +72,7 @@ class S3Client
     #  end
     #end
     #thread.each(&:join)
+    p 'load "#{__dir__}/set_each_range_text.rb"' 
     load "#{__dir__}/set_each_range_text.rb"
   end
 end

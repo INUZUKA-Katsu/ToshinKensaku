@@ -17,6 +17,7 @@ def text_range(joken)
 end
 
 def 範囲データ作成保存
+  puts :start_make_range_text
   err=[]
   path_array = Dir.glob("/Users/inuzuka0601/Sites/Toshin/tmp/*.txt").select{|f| f.encode("UTF-8","UTF-8-MAC").match(/号(まで)?\.txt/)}
   joken_array = ["ketsuron","jisshikikan","seikyunin","shinsakai","shinsakailast"]
@@ -29,6 +30,7 @@ def 範囲データ作成保存
           new_path = path.sub(/\.txt/, joken + ".txt")
           #p new_path if new_path.match(/まで/)
           File.write(new_path,str)
+          puts new_path
         else
           err << [File.basename(path),joken]  
         end
