@@ -4,7 +4,7 @@ require "net/https"
 require 'open-uri'
 require 'aws-sdk-s3'
 require 'parallel'
-require_relative 'set_each_range_txt'
+require __dir__+"/set_each_range_txt"
 
 STDOUT.sync = true
 Encoding.default_external = "utf-8"
