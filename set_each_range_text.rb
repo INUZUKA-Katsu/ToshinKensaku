@@ -16,7 +16,7 @@ def text_range(joken)
   end
 end
 
-def 範囲データ作成保存
+def set_each_range_txt()
   puts :start_make_range_text
   err=[]
   path_array = Dir.glob("/Users/inuzuka0601/Sites/Toshin/tmp/*.txt").select{|f| f.encode("UTF-8","UTF-8-MAC").match(/号(まで)?\.txt/)}
@@ -40,7 +40,6 @@ def 範囲データ作成保存
       p e[0] + " => " + e[1]
   end
 end
-範囲データ作成保存
 
 def ファイル存在チェック
     res = []

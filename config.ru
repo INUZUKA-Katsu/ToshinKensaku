@@ -1,4 +1,4 @@
-kensaku_logic = :open3
+kensaku_logic = :ripgrep
 case kensaku_logic
 when :open3
   require_relative 'kensaku_with_ripgrep_via_Open3_and_precut.rb'

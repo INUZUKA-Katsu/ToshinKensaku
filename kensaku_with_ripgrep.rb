@@ -4,6 +4,7 @@ require "net/https"
 require 'open-uri'
 require 'aws-sdk-s3'
 require 'parallel'
+require_relative 'set_each_range_txt'
 
 STDOUT.sync = true
 Encoding.default_external = "utf-8"
@@ -49,13 +50,11 @@ class S3Client
   def fill_tmp_folder
     s3_files = get_list.map{|f| f.sub("toshin/","")}
     tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
-    thread = []
     (s3_files-tmp_files).each do |f|
-      thread << Thread.new do
         File.write("./tmp/"+f,read(f))
       end
     end
-    thread.each(&:join)
+    set_each_range_txt
   end
 end
 def postData_arrange(param)
