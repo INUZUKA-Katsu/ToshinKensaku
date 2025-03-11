@@ -1,13 +1,13 @@
 kensaku_logic = :ripgrep
 case kensaku_logic
 when :open3
-  require_relative 'kensaku_with_ripgrep_via_Open3_and_precut.rb'
+  require __dir__+'/kensaku_with_ripgrep_via_Open3_and_precut.rb'
 when :precut
-  require_relative 'kensaku_with_ripgrep_and_precut.rb'
+  require __dir__+'/kensaku_with_ripgrep_and_precut.rb'
 when :ripgrep
-  require_relative 'kensaku_with_ripgrep.rb'
+  require __dir__+'/kensaku_with_ripgrep.rb'
 when :simple
-  require_relative 'kensaku.rb'
+  require __dir__+'/kensaku.rb'
 end
 require_relative 'hinagata.rb'
 require_relative 'joho/soumu.rb'

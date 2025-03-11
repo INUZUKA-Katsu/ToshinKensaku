@@ -4,7 +4,7 @@ require "net/https"
 require 'open-uri'
 require 'aws-sdk-s3'
 require 'parallel'
-require __dir__+"/set_each_range_txt"
+#require __dir__+"/set_each_range_txt"
 
 STDOUT.sync = true
 Encoding.default_external = "utf-8"
@@ -53,7 +53,7 @@ class S3Client
     (s3_files-tmp_files).each do |f|
         File.write("./tmp/"+f,read(f))
     end
-    set_each_range_txt
+    #set_each_range_txt
   end
 end
 def postData_arrange(param)
