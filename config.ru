@@ -1,4 +1,4 @@
-kensaku_logic = :ripgrep
+kensaku_logic = :open3
 case kensaku_logic
 when :open3
   require __dir__+'/kensaku_with_ripgrep_via_Open3_and_precut.rb'
@@ -47,6 +47,9 @@ class AddNewData
         if !File.exist?(@time_stamp) or ( Time.parse(File.read(@time_stamp))+24*60*60 < Time.now )
           pid = Process.spawn("ruby add_new_data.rb", out: STDOUT, err: STDERR)
           Process.detach(pid)
+          # ToshinAppの@toshinを更新
+          sleep 1
+          @app.update_toshin if @app.respond_to?(:update_toshin)
         end
       rescue => e
         puts "Error: #{e.message}"
@@ -58,6 +61,9 @@ end
 
 class ToshinApp
   #初期設定
+  def initialize
+    @toshin = Toshin.new
+  end
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
   	req     = Rack::Request.new(env)
@@ -83,8 +89,7 @@ class ToshinApp
         joken, j_str = getData_arrange(req.query_string)
       end
       #p "joken => " + JSON.generate(joken)
-      toshin = Toshin.new
-      h = toshin.get_hinagata_data(joken)
+      h = @toshin.get_hinagata_data(joken)
       kensu = h.size
       #p "kensu => "+kensu.to_s
       if kensu>0
@@ -177,6 +182,10 @@ class ToshinApp
     when ".mp3"          ;  "inline;"
     else                 ;  "attachment;"
     end
+  end
+  def update_toshin
+    @toshin = Toshin.new  # AWSから最新データを読み込んで更新
+    puts "Toshin updated!"
   end
 end
 
