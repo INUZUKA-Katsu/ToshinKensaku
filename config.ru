@@ -164,7 +164,7 @@ class ToshinApp
     Thread.new do
       while @running
         begin
-          sleep 60
+          sleep 60*60 #1時間に1回実行する
           processed_data = DataProcessor.add_new_data(@logger)  # メソッド呼び出し
           if processed_data == :updated
             @toshin = Toshin.new  # processed_dataを元に更新
