@@ -1,24 +1,23 @@
 kensaku_logic = :open3
 case kensaku_logic
 when :open3
-  require __dir__+'/kensaku_with_ripgrep_via_Open3_and_precut.rb'
+  require_relative 'kensaku_with_ripgrep_via_Open3_and_precut.rb'
 when :precut
-  require __dir__+'/kensaku_with_ripgrep_and_precut.rb'
+  require_relative 'kensaku_with_ripgrep_and_precut.rb'
 when :ripgrep
-  require __dir__+'/kensaku_with_ripgrep.rb'
+  require_relative 'kensaku_with_ripgrep.rb'
 when :simple
-  require __dir__+'/kensaku.rb'
+  require_relative 'kensaku.rb'
 end
-require_relative 'hinagata.rb'
-require_relative 'joho/soumu.rb'
 require 'cgi'
 require 'uri'
 require 'time'
-require './send_nifty_mail'
+require_relative 'hinagata.rb'
+require_relative 'send_nifty_mail'
+require_relative 'add_new_data'
+require_relative 'joho/soumu.rb'
 
-Encoding.default_external = "utf-8"
-
-URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
+Encoding.default_external = "utf-8" #アプリ全体の設定
 
 #tmpフォルダに不足するファイルをダウンロードする.
 S3Client.new.fill_tmp_folder
@@ -35,34 +34,15 @@ class TimerMiddleware
     [status, headers, response]  # レスポンスを返す
   end
 end
-class AddNewData
-  def initialize(app)
-    @app = app
-    @time_stamp = "#{__dir__}/tmp/search_new_pdf.txt"
-  end
-  def call(env)
-    request = Rack::Request.new(env)
-    if request.path == '/'
-      begin
-        if !File.exist?(@time_stamp) or ( Time.parse(File.read(@time_stamp))+24*60*60 < Time.now )
-          pid = Process.spawn("ruby add_new_data.rb", out: STDOUT, err: STDERR)
-          Process.detach(pid)
-          # ToshinAppの@toshinを更新
-          sleep 1
-          @app.update_toshin if @app.respond_to?(:update_toshin)
-        end
-      rescue => e
-        puts "Error: #{e.message}"
-      end
-    end
-    @app.call(env)  # 次のミドルウェアまたはアプリへレスポンスを返す
-  end
-end
 
 class ToshinApp
   #初期設定
   def initialize
     @toshin = Toshin.new
+    @logger = Logger.new(STDOUT)
+    @running = true
+    @updater_thread = start_background_updater
+    at_exit { stop_background_updater }
   end
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
@@ -108,7 +88,7 @@ class ToshinApp
            .sub(/<--部会-->/,h[bango][:bukai])
            .sub(/<--実施機関-->/,h[bango][:jisshikikan])
            .sub(/<--件名-->/,h[bango][:kenmei])
-           .sub(/<--URL-->/,URL+h[bango][:url])
+           .sub(/<--URL-->/,DataProcessor::URL+h[bango][:url])
            if joken.keys.include? :freeWord
              res[i].sub!(/<--該当部分-->/,h[bango][:matched_range])
            end
@@ -122,10 +102,6 @@ class ToshinApp
       html.sub!(/<--検索条件-->/,j_str.to_a.map{|j| j.join(" => ")}.join("<br>"))
       header["Content-Type"]   = 'text/html'
       response                 = html
-      #Heroku環境では市サイトから取得したファイルはtmpフォルダに保存するほかないが、
-      #ローカル環境で実行した場合はtmpフォルダから本来のnenreibetsuフォルダに移しておく。
-      #そして折を見てHeroku環境にPushする。
-      #temp_to_regular_folder if req.url.match(/localhost/)
     
     elsif req.post? and req.path=="/return" and param.keys.include? "joken"
     #検索結果画面から「戻る」ボタンで検索条件画面に戻るとき、フォームに前回の検索条件を設定して表示する。
@@ -183,13 +159,31 @@ class ToshinApp
     else                 ;  "attachment;"
     end
   end
-  def update_toshin
-    @toshin = Toshin.new  # AWSから最新データを読み込んで更新
-    puts "Toshin updated!"
+
+  def start_background_updater
+    Thread.new do
+      while @running
+        begin
+          sleep 60
+          processed_data = DataProcessor.add_new_data(@logger)  # メソッド呼び出し
+          if processed_data == :updated
+            @toshin = Toshin.new  # processed_dataを元に更新
+            @logger.info("Toshin updated successfully")
+          end
+        rescue StandardError => e
+          @logger.error("Background updater failed: #{e.message}")
+          sleep 5
+        end
+      end
+      @logger.info("Background updater stopped")
+    end
+  end
+  def stop_background_updater
+    @running = false
+    @updater_thread.join
   end
 end
 
-use AddNewData
 use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
 use Rack::Static, :urls => {'/'=>'/index.html'}, :root => '.'
 use TimerMiddleware

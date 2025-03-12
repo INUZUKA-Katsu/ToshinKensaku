@@ -2,79 +2,15 @@ require 'json'
 require 'kconv'
 require "net/https"
 require 'open-uri'
-require 'aws-sdk-s3'
 require 'parallel'
 require 'concurrent'
 require 'open3'
-require "#{__dir__}/set_each_range_text"
+require_relative 'lib/s3_client'
+require_relative 'set_each_range_text'
 
 STDOUT.sync = true
 Encoding.default_external = "utf-8"
 
-class Hash
-  def key_to_sym()
-    new_h = Hash.new
-    self.keys.each do |k|
-      new_h[k.to_sym]=self[k]
-    end
-    new_h
-  end
-end
-class S3Client
-  attr_reader :bucket
-  def initialize
-    @resource = Aws::S3::Resource.new(
-      :region => 'us-east-1',
-      :access_key_id   => ENV['AWS_ACCESS_KEY_ID'],
-      :secret_access_key => ENV['AWS_SECRET_ACCESS_KEY']
-    )
-    @bucket = @resource.bucket('storgae-for-herokuapp')
-  end
-  def read(file_name)
-    @bucket.object("toshin/"+file_name).get.body.read.toutf8
-  end
-  def write(file_name,str)
-    @bucket.put_object(key: "toshin/"+file_name, body: str)
-  end
-  def exist?(file_name)
-    @bucket.object("toshin/"+file_name).exists?
-  end
-  def remove(file_name)
-    @bucket.object("toshin/"+file_name).delete
-  end
-  def get_list
-    res = []
-    @bucket.objects(prefix: "toshin/").each do |obj|
-      res << obj.key if obj.key.include? ".txt"
-    end
-    res
-  end
-  # 起動時にtmpフォルダを確認し、不足するファイルをダウンロードする。
-  def fill_tmp_folder
-    s3_files = get_list.map{|f| f.sub("toshin/","")}
-    tmp_files = Dir.glob('./tmp/*.txt').map{|f| f.sub(/.*tmp\//,"")}
-    # スレッド数を5に制限したプールを作成
-    pool = Concurrent::ThreadPoolExecutor.new(max_threads: 5)
-    (s3_files-tmp_files).each do |f|
-      pool.post do
-        File.write("./tmp/"+f,read(f))
-        sleep 0.5
-      end
-    end
-    # プールが終了するのを待つ
-    pool.shutdown
-    pool.wait_for_termination
-    #thread = []
-    #(s3_files-tmp_files).each do |f|
-    #  thread << Thread.new do
-    #    File.write("./tmp/"+f,read(f))
-    #   sleep 0.05
-    #  end
-    #end
-    #thread.each(&:join)
-    set_each_range_text
-  end
-end
 def postData_arrange(param)
   #p param
   joken = Hash.new
@@ -289,9 +225,6 @@ class Toshin
     @s3 = S3Client.new
     @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
   end
-  def update(new_midashi)
-    @midashi = new_midashi
-  end
   #フリーワード以外の条件から対象ファイルを絞り込む。
   def search(joken) #jokenはハッシュ
     selected = @midashi
@@ -491,16 +424,17 @@ class Toshin
       matching_file_path_array
     end
     def text_range(joken)
-      case joken[:freeWordRange]
-      when ""             ;  nil
-      when "ketsuron"     ;  "審査会の結論.*?(?=((異議)?申立て|審査請求|申出)の趣旨)"
-      when "jisshikikan"  ;  "理由説明要旨.*?(?=((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見)"
-      when "seikyunin"    ;  "((本件処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?(?=審査会の判断)"
-      when "shinsakai"    ;  '審査会の判断.*'
-      when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)*結論)(.*?(^( |　)*別表|別表[0-9０-９]*( |　)*$|別( |　)+表|審査会の経過)|.*)'
-      else  nil
+        honbun_end = '(.*?(委員.{3,10}){3}|.*?《参考》|.*?^( |　)*別表|.*?別表[0-9０-９]*( |　)*$|.*?別( |　)+表|.*?審査会の経過|.*)'
+        case joken
+        when ""             ;  nil
+        when "ketsuron"     ;  "審査会の結論.*?(?=((異議)?申立て|審査請求|申出)の趣旨)"
+        when "jisshikikan"  ;  "(理由|に関する)説明要旨.*?(?=((処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見)"
+        when "seikyunin"    ;  "((処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?(?=審査会の判断)"
+        when "shinsakai"    ;  "審査会の判断.*?" + honbun_end
+        when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)*結論|(?<!審査会の)結( |　)*論\n).*?' + honbun_end
+        else  nil
+        end
       end
-    end
     def reg_pattern(word_array)
       # 検索語が複数の時は、"[^\n]*(検索語1|検索語2|検索語3).*(検索語1|検索語2|検索語3).*?\n"
       # という正規表現をつくる。  
@@ -630,7 +564,7 @@ if 1==1
         #h.merge({:matched_range => matched_range})  # `merge` を使って新しいハッシュを返す
         file_name_origin = File.basename(path).sub(/(.*号(まで)?)(.+?)\.txt/,'\1.txt')
         begin
-        selected.find{|h| h[:file_name] == file_name_origin}.
+        selected.find{|h| h[:file_name] == file_name_origin}&.
                           merge({:matched_range => matched_range})
         rescue =>e
           p e.message
