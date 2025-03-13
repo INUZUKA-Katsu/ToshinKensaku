@@ -1,26 +1,24 @@
 kensaku_logic = :open3
 case kensaku_logic
 when :open3
-  require_relative 'kensaku_with_ripgrep_via_Open3_and_precut.rb'
+  require_relative 'lib/kensaku_with_ripgrep_via_Open3_and_precut.rb'
 when :precut
-  require_relative 'kensaku_with_ripgrep_and_precut.rb'
+  require_relative 'lib/kensaku_with_ripgrep_and_precut.rb'
 when :ripgrep
-  require_relative 'kensaku_with_ripgrep.rb'
+  require_relative 'lib/kensaku_with_ripgrep.rb'
 when :simple
-  require_relative 'kensaku.rb'
+  require_relative 'lib/kensaku.rb'
 end
 require 'cgi'
 require 'uri'
 require 'time'
-require_relative 'hinagata.rb'
-require_relative 'send_nifty_mail'
-require_relative 'add_new_data'
+require_relative 'lib/hinagata.rb'
+require_relative 'lib/send_nifty_mail.rb'
+require_relative 'lib/add_new_data.rb'
+require_relative 'lib/set_range_text.rb'
 require_relative 'joho/soumu.rb'
 
 Encoding.default_external = "utf-8" #アプリ全体の設定
-
-#tmpフォルダに不足するファイルをダウンロードする.
-S3Client.new.fill_tmp_folder
 
 class TimerMiddleware
   def initialize(app)
@@ -38,6 +36,7 @@ end
 class ToshinApp
   #初期設定
   def initialize
+    start_file_loading
     @toshin = Toshin.new
     @logger = Logger.new(STDOUT)
     @running = true
@@ -69,6 +68,7 @@ class ToshinApp
         joken, j_str = getData_arrange(req.query_string)
       end
       #p "joken => " + JSON.generate(joken)
+      wait_for_loading #テキストファイルの転送と範囲テキストデータ作成の完了待ち
       h = @toshin.get_hinagata_data(joken)
       kensu = h.size
       #p "kensu => "+kensu.to_s
@@ -159,14 +159,35 @@ class ToshinApp
     else                 ;  "attachment;"
     end
   end
-
+  
+  #答申テキストファイルを転送
+  def start_file_loading
+    @loading_thread = Thread.new do
+      #tmpフォルダにファイルをダウンロードする.
+      S3Client.new.fill_tmp_folder
+      # 範囲を切り出して個別テキストファイルとしてtmpフォルダに保存
+      SetRange.set_each_range_text
+      @loading_complete = true
+    end
+  end
+  #答申テキストファイルの転送完了まで待機
+  def wait_for_loading
+    @loading_thread&.join # スレッドが終了するまで待機
+  end
+  #新規答申の確認･取込みのループ処理
   def start_background_updater
     Thread.new do
       while @running
         begin
-          sleep 60*60 #1時間に1回実行する
-          processed_data = DataProcessor.add_new_data(@logger)  # メソッド呼び出し
-          if processed_data == :updated
+          #1時間待機
+          (60*60).times do
+            sleep 1
+            break unless @running
+          end
+          next unless @running
+          new_files = DataProcessor.add_new_data(@logger,@toshin)  # メソッド呼び出し
+          if new_files
+            SetRange.set_each_range_text(new_files)
             @toshin = Toshin.new  # processed_dataを元に更新
             @logger.info("Toshin updated successfully")
           end
@@ -178,6 +199,7 @@ class ToshinApp
       @logger.info("Background updater stopped")
     end
   end
+  #終了時にループ処理も終了
   def stop_background_updater
     @running = false
     @updater_thread.join

@@ -1,20 +1,21 @@
-$poppler = nil
 require 'kconv'
 require 'json'
 require "net/https"
 require 'open-uri'
-require 'pdf-reader'
-if $poppler == true
+begin
   require 'poppler'
+rescue LoadError
+  require 'pdf-reader'
 end
 require_relative 'send_nifty_mail'
-require_relative 'lib/s3_client'
+require_relative 's3_client'
 
 module DataProcessor
   extend self
-  
+  ROOT_DIR = File.expand_path('..', __dir__)
+  TMP_DIR = File.join(ROOT_DIR, 'tmp')
   URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
-  Dest = "#{__dir__}/tmp/temp.pdf"
+  Dest = "#{TMP_DIR}/temp.pdf"
   
   #保存済みの最新答申番号後の答申番号,URL,件名を取得する。
   def get_bango_url_kenmei_after(max_num = nil)
@@ -71,7 +72,7 @@ module DataProcessor
         s = page.text
       end
       if i == 0
-        num = s.match(/答申第[0-9０-９]+号(から第[0-9０-９]+号まで)?/)[0].tr("０-９","0-9")
+        toshin_num = s.tr("０-９","0-9").match(/答申第\d+号((から|及び)第\d+号(まで)?)?/)[0]
       end
       str += s.sub(/\s+－[0-9０-９]{1,2}－$/,"\n")
     end
@@ -81,8 +82,9 @@ module DataProcessor
                 gsub(/(?<!審査会の結論|審査請求の趣旨|説明要旨|本件処分に対する意見|審査会の判断|結論)\s*\n\s*(?!\s*([１-５ア-ンa-z]\s|\([1-9ｱ-ﾄa-z]\)|（第.部会）|（制度運用調査部会）|別表))/m,"")
       #file_name = "tmp/#{num}.txt"
       #File.write(file_name,str)
-      file_name = "#{num}.txt"
-      s3.write(file_name,str)
+      file_name = "#{toshin_num}.txt"
+      s3.write(file_name, str)
+      File.write(TMP_DIR+"/"+file_name, str)
       file_name
     end
   end
@@ -166,20 +168,22 @@ module DataProcessor
     h
   end
   def time_stamp()
-    File.write("#{__dir__}/tmp/search_new_pdf.txt",Time.now)
+    File.write("#{TMP_DIR}/search_new_pdf.txt",Time.now)
   end
   
-  def self.add_new_data(logger)
+  def self.add_new_data(logger,toshin)
     begin
       # ************* ログ出力 ********************
       logger.info "Loop task start at #{Time.now}"
       # ******************************************
       
       s3 = S3Client.new
-      #midashi = JSON.parse(File.read("#{__dir__}/tmp/bango_hizuke_kikan.json"))
-      midashi = JSON.parse(s3.read("bango_hizuke_kikan.json"))
+      #midashi = JSON.parse(File.read("#{TMP_DIR}/bango_hizuke_kikan.json"))
+      #midashi = JSON.parse(s3.read("bango_hizuke_kikan.json"))
+      midashi = toshin.midashi.dup
+      p midashi
       #保存済みの最新答申番号
-      saved_max_num = midashi.map{|data| data["num_array"][0].to_i}.max
+      saved_max_num = midashi.map{|data| data[:num_array][0].to_i}.max
       logger.info "saved_max_num => " + saved_max_num.to_s
       toshin_url, toshin_kenmei = get_bango_url_kenmei_after(saved_max_num)
       if toshin_url==nil
@@ -189,28 +193,28 @@ module DataProcessor
       end
       puts toshin_url
       puts toshin_kenmei
-      
+      file_name_array=[]
       toshin_url.keys.each do |num|
         puts "num => " + num.to_s
         file_name = get_text_from(URL+toshin_url[num], s3)
+        file_name_array << file_name
         puts file_name
         h = get_midashi_data_from(file_name, s3)
         p h
-        puts 'h["bango"] => ' + h["bango"].to_s
-        h["num_array"] = get_num_array_from(h["bango"])
-        h["file_name"] = file_name
-        h["url"]       = toshin_url[num]
-        h["kenmei"]    = toshin_kenmei[num]
+        puts 'h[:bango] => ' + h[:bango].to_s
+        h[:num_array] = get_num_array_from(h[:bango])
+        h[:file_name] = file_name
+        h[:url]       = toshin_url[num]
+        h[:kenmei]    = toshin_kenmei[num]
         midashi << h
       end
     
-      midashi = midashi.sort_by{|h| h["num_array"][0].to_i}
-      #File.write("tmp/bango_hizuke_kikan.json",JSON.generate(midashi))
+      midashi = midashi.sort_by{|h| h[:num_array][0].to_i}
+      #File.write("#{TMP_DIR}/bango_hizuke_kikan.json",JSON.generate(midashi))
       json = JSON.generate(midashi)
       s3.write("bango_hizuke_kikan.json", json)
-      File.write("#{__dir__}/tmp/bango_hizuke_kikan.json", json)
+      File.write("#{TMP_DIR}/bango_hizuke_kikan.json", json)
       time_stamp
-      return :updated
     rescue => e
       err = [e.message] << e.backtrace 
       err_str = err.join("\n")
@@ -218,9 +222,16 @@ module DataProcessor
       logger.error err_str
       send_mail(err_str)
     end
-    
     # ************* ログ出力 ********************
     logger.info  "Task ended at #{Time.now}"
     # ******************************************
+    return file_name_array
   end
 end
+
+##********** 実行テスト ************
+#require_relative 'kensaku_with_ripgrep_via_Open3_and_precut'
+#Encoding.default_external = "utf-8"
+#logger=Logger.new(STDOUT)
+#toshin=Toshin.new
+#puts DataProcessor.add_new_data(logger,toshin)
