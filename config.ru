@@ -39,9 +39,9 @@ class ToshinApp
     start_file_loading
     @toshin = Toshin.new
     @logger = Logger.new(STDOUT)
-    @running = true
-    @updater_thread = start_background_updater
-    at_exit { stop_background_updater }
+    #@running = true
+    #@updater_thread = start_background_updater
+    #at_exit { stop_background_updater }
   end
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
