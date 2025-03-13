@@ -8,6 +8,7 @@ require_relative 's3_client'
 
 STDOUT.sync = true
 
+#答申データベース検索画面で検索した場合の処理
 def postData_arrange(param)
   #p param
   joken = Hash.new
@@ -204,6 +205,7 @@ def postData_arrange(param)
   end
   [ joken, j_str ]
 end
+#「例規集、ほか各種検索」で検索した場合の処理
 def getData_arrange(query_string)
   joken={}
   j_str={}
@@ -224,112 +226,147 @@ class Toshin
   def initialize
     @s3 = S3Client.new
     @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
+    @logger = Logger.new(STDOUT)
   end
   #フリーワード以外の条件から対象ファイルを絞り込む。
   def search(joken) #jokenはハッシュ
     selected = @midashi
-    if joken.keys.include? :jorei
-       selected = selected.select{|h|
-         #p "h[:jorei].include?(joken[:jorei]) => " + h[:jorei] + " include? " + joken[:jorei]
-         joken[:jorei].include?(h[:jorei])
-       }
+    begin
+      if joken.keys.include? :jorei
+         selected = selected.select{|h|
+           #p "h[:jorei].include?(joken[:jorei]) => " + h[:jorei] + " include? " + joken[:jorei]
+           joken[:jorei].include?(h[:jorei])
+         }
+      end
+      p :s1
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s1
-    p selected.size
-    if joken.keys.include? :seikyu and joken[:seikyu] != "開示請求訂正請求利用停止請求"
-       selected = selected.select{|h|
-         #p "joken[:seikyu].include?(h[:seikyu]) => " + joken[:seikyu] + " include? " + h[:seikyu]
-         h[:seikyu]!="" and joken[:seikyu].include?(h[:seikyu])
-       }
+    begin
+      if joken.keys.include? :seikyu and joken[:seikyu] != "開示請求訂正請求利用停止請求"
+         selected = selected.select{|h|
+           h[:seikyu] and h[:seikyu]!="" and joken[:seikyu].include?(h[:seikyu])
+         }
+      end
+      p :s2
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s2
-    p selected.size
-
-    if joken.keys.include? :num
-       if joken[:num].class==String
-         selected = selected.select{|h| h[:num_array].include?(joken[:num])}
-       elsif joken[:num].class==Hash
-         j = joken[:num]
-         if j.keys.size==2
-           a = (j[:from]..j[:to]).to_a
-           selected = selected.select{|h| (h[:num_array] & a).size>0 }
-         elsif j.keys[0]==:from
-           selected = selected.select{|h| j[:from].to_i <= h[:num_array].max.to_i }
-         elsif j.keys[0]==:to
-           selected = selected.select{|h| j[:to].to_i >= h[:num_array].min.to_i }
+    begin
+      if joken.keys.include? :num
+         if joken[:num].class==String
+           selected = selected.select{|h| h[:num_array].include?(joken[:num])}
+         elsif joken[:num].class==Hash
+           j = joken[:num]
+           if j.keys.size==2
+             a = (j[:from]..j[:to]).to_a
+             selected = selected.select{|h| (h[:num_array] & a).size>0 }
+           elsif j.keys[0]==:from
+             selected = selected.select{|h| j[:from].to_i <= h[:num_array].max.to_i }
+           elsif j.keys[0]==:to
+             selected = selected.select{|h| j[:to].to_i >= h[:num_array].min.to_i }
+           end
          end
-       end
+      end
+      p :s3
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s3
-    p selected.size
-
-    if joken.keys.include? :bango
-       selected = selected.select{|h| h[:bango].include?(joken[:bango])}
+    begin      
+      if joken.keys.include? :bango
+         selected = selected.select{|h| h[:bango].include?(joken[:bango])}
+      end
+      p :s4
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s4
-    p selected.size
-
-    if joken.keys.include? :yyyymmdd
-       if joken[:yyyymmdd].class==String
-         selected = selected.select{|h| h[:yyyymmdd].include?(joken[:yyyymmdd])}
-       elsif joken[:yyyymmdd].class==Hash
-         j = joken[:yyyymmdd]
-         if j.keys.size==2
-           selected = selected.select{|h| h[:yyyymmdd].between?(j[:from],j[:to])}
-         elsif j.keys[0]==:from
-           selected = selected.select{|h| j[:from] <= h[:yyyymmdd]}
-         elsif j.keys[0]==:to
-           selected = selected.select{|h| h[:yyyymmdd] <= j[:to]}
+    begin  
+      if joken.keys.include? :yyyymmdd
+         if joken[:yyyymmdd].class==String
+           selected = selected.select{|h| h[:yyyymmdd].include?(joken[:yyyymmdd])}
+         elsif joken[:yyyymmdd].class==Hash
+           j = joken[:yyyymmdd]
+           if j.keys.size==2
+             selected = selected.select{|h| h[:yyyymmdd].between?(j[:from],j[:to])}
+           elsif j.keys[0]==:from
+             selected = selected.select{|h| j[:from] <= h[:yyyymmdd]}
+           elsif j.keys[0]==:to
+             selected = selected.select{|h| h[:yyyymmdd] <= j[:to]}
+           end
          end
-       end
+      end
+      p :s5
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s5
-    p selected.size
-
-    if joken.keys.include? :toshinbi
-       selected = selected.select{|h| h[:toshinbi].include?(joken[:toshinbi])}
+    begin
+      if joken.keys.include? :toshinbi
+         selected = selected.select{|h| h[:toshinbi].include?(joken[:toshinbi])}
+      end
+      p :s6
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s6
-    p selected.size
-
-    if joken.keys.include? :kikan
-       selected = selected.select{|h| h[:jisshikikan].include?(joken[:kikan])}
+    begin  
+      if joken.keys.include? :kikan
+         selected = selected.select{|h| h[:jisshikikan].include?(joken[:kikan])}
+      end
+      p :s7
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s7
-    p selected.size
-
-    if joken.keys.include? :kikanQuery
-       joken[:kikanQuery].each do |k|
-         selected = selected.select{|h| h[:jisshikikan].include?(k)}
-       end
+    begin
+      if joken.keys.include? :kikanQuery
+         joken[:kikanQuery].each do |k|
+           selected = selected.select{|h| h[:jisshikikan].include?(k)}
+         end
+      end
+      p :s8
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s8
-    p selected.size
-
-    if joken.keys.include? :bukai
-       selected = selected.select{|h| h[:bukai].include?(joken[:bukai])}
+    begin  
+      if joken.keys.include? :bukai
+         selected = selected.select{|h| h[:bukai].include?(joken[:bukai])}
+      end
+      p :s9
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s9
-    p selected.size
-
-    if joken.keys.include? :bukaiQuery
-       ary = []
-       selected_ary = joken[:bukaiQuery].map{|bukai| selected.select{|h| h[:bukai].include? bukai}}
-       selected_ary.each do |selected|
-         ary =  ary | selected
-       end
-       selected = ary
+    begin
+      if joken.keys.include? :bukaiQuery
+         ary = []
+         selected_ary = joken[:bukaiQuery].map{|bukai| selected.select{|h| h[:bukai].include? bukai}}
+         selected_ary.each do |selected|
+           ary =  ary | selected
+         end
+         selected = ary
+      end
+      p :s10
+      p selected.size
+    rescue =>e
+      err_logger(e)
     end
-    p :s10
-    p selected.size
-
-    if joken.keys.include? :iinQuery
-       ary = []
-       selected_ary = joken[:iinQuery].map{|iin| selected.select{|h| h[:iin].include? iin}}
-       selected_ary.each do |selected|
-         ary =  ary | selected
-       end
-       selected = ary
+    begin  
+      if joken.keys.include? :iinQuery
+         ary = []
+         selected_ary = joken[:iinQuery].map{|iin| selected.select{|h| h[:iin].include? iin}}
+         selected_ary.each do |selected|
+           ary =  ary | selected
+         end
+         selected = ary
+      end
+    rescue =>e
+      err_logger(e)
     end
     selected
   end
@@ -391,7 +428,7 @@ class Toshin
     def ripgrep(file_name_array, word_array, type)
       # ファイルパスを構築
       files = file_name_array.map { |file_name| "#{TMP_DIR}/#{file_name}" }
-      puts files
+      #puts files
       if type == 'or'
         # OR検索: 単語を | で結合した正規表現で一度に検索
         search_terms = word_array.join('|')
@@ -615,6 +652,11 @@ else
     #File.write("thread_result.json", JSON.generate(res))  #debug用
     res
 end
+  end
+  def err_logger(e)
+    err = [e.message] << e.backtrace 
+    err_str = err.join("\n")
+    @logger.error err.str
   end
 end
 
