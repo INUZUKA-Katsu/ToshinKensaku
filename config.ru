@@ -165,17 +165,17 @@ class ToshinApp
   
   #答申テキストファイルを転送
   def start_file_loading
-    @loading_thread = Thread.new do
+    #@loading_thread = Thread.new do
       #tmpフォルダにファイルをダウンロードする.
       S3Client.new.fill_tmp_folder
       # 範囲を切り出して個別テキストファイルとしてtmpフォルダに保存
       SetRange.set_each_range_text
-      @loading_complete = true
-    end
+      #@loading_complete = true
+    #end
   end
   #答申テキストファイルの転送完了まで待機
   def wait_for_loading
-    @loading_thread&.join # スレッドが終了するまで待機
+    #@loading_thread&.join # スレッドが終了するまで待機
   end
   #新規答申の確認･取込みのループ処理
   def start_background_updater
