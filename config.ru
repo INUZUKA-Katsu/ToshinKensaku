@@ -39,9 +39,9 @@ class ToshinApp
     start_file_loading
     @toshin = Toshin.new
     @logger = Logger.new(STDOUT)
-    #@running = true
-    #@updater_thread = start_background_updater
-    #at_exit { stop_background_updater }
+    @running = true
+    @updater_thread = start_background_updater
+    at_exit { stop_background_updater }
   end
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
@@ -165,17 +165,15 @@ class ToshinApp
   
   #答申テキストファイルを転送
   def start_file_loading
-    #@loading_thread = Thread.new do
-      #tmpフォルダにファイルをダウンロードする.
-      S3Client.new.fill_tmp_folder
-      # 範囲を切り出して個別テキストファイルとしてtmpフォルダに保存
-      SetRange.set_each_range_text
-      #@loading_complete = true
-    #end
+    @loading_thread = Thread.new do
+     #tmpフォルダにファイルをダウンロードする.
+     S3Client.new.fill_tmp_folder      
+     @loading_complete = true
+    end
   end
   #答申テキストファイルの転送完了まで待機
   def wait_for_loading
-    #@loading_thread&.join # スレッドが終了するまで待機
+    @loading_thread&.join # スレッドが終了するまで待機
   end
   #新規答申の確認･取込みのループ処理
   def start_background_updater
