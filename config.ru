@@ -67,6 +67,7 @@ class ToshinApp
         # kensaku.rb の getData_arrange でリクエストデータを取得する。
         joken, j_str = getData_arrange(req.query_string)
       end
+      p joken
       #p "joken => " + JSON.generate(joken)
       wait_for_loading #テキストファイルの転送と範囲テキストデータ作成の完了待ち
       h = @toshin.get_hinagata_data(joken)
@@ -130,7 +131,7 @@ class ToshinApp
     elsif req.path=="/joho" or req.path=="/joho/" or req.path=="/joho/index.html"
       header["Content-Type"] = 'text/html'        
       response               = File.read('joho/index.html')
-
+    
     else
       header["Content-Type"] = 'text/html'        
       response               = File.read('index.html')
@@ -142,6 +143,8 @@ class ToshinApp
     when ".html"        ;  "text/html"
     when ".pdf"         ;  "application/pdf"
     when ".png"         ;  "image/png"
+    when ".svg"         ;  "image/svg"
+    when ".ico"         ;  "image/ico"
     when ".jpg","jpeg"  ;  "image/jpeg"
     when ".gif"         ;  "image/gif"
     when ".mp3"         ;  "audio/mp3"
@@ -206,8 +209,14 @@ class ToshinApp
   end
 end
 
-use Rack::Static, :urls => ['/js','/css','/image','/tmp'], :root => '.'
-use Rack::Static, :urls => {'/'=>'/index.html'}, :root => '.'
+use Rack::Static, 
+      urls: ["/js", "/css","/image","/tmp","/favicon"], 
+      root: "."
+
+use Rack::Static, 
+      urls: {"/"=>"index.html"},
+      root: "."
+
 use TimerMiddleware
 begin
   run ToshinApp.new
