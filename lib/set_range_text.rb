@@ -40,12 +40,16 @@ module SetRange
     end
     joken_array = ["ketsuron","jisshikikan","seikyunin","shinsakai","shinsakailast"]
     err=[]
+    threads=[]
     joken_array.each do |joken|
-      path_array.each do |path|
-        res = set_range_text(path,joken)
-        err << res if res
+      threads << Thread.new do 
+        path_array.each do |path|
+          res = set_range_text(path,joken)
+          err << res if res
+        end
       end
     end
+    threads.each(&:join)
     err.each do |e|
         p e[0] + " => " + e[1]
     end

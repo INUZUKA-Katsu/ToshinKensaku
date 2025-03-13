@@ -167,7 +167,9 @@ class ToshinApp
   def start_file_loading
     @loading_thread = Thread.new do
      #tmpフォルダにファイルをダウンロードする.
-     S3Client.new.fill_tmp_folder      
+     S3Client.new.fill_tmp_folder
+     #範囲ごとの個別テキストファイルを作成
+     SetRange.set_each_range_text
      @loading_complete = true
     end
   end
