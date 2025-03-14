@@ -476,7 +476,7 @@ class Toshin
     def reg_pattern(word_array)
       # 検索語が複数の時は、"[^\n]*(検索語1|検索語2|検索語3).*(検索語1|検索語2|検索語3).*?\n"
       # という正規表現をつくる。（scanで取得できるように全体を半角括弧で囲う。）
-        "([^\n]{0,100}(#{word_array.join("|")})(.*(#{word_array.join("|")}))?[^\n]{0,100}\n?)"
+        "([^\n]{0,100}(#{word_array.join('|')})(.*(#{word_array.join('|')}))?[^\n]{0,100}\n?)"
     end
     #************** 答申のテキストから該当箇所を切り出す *****************
     def exec_search(str,word_array,type)
