@@ -508,10 +508,9 @@ class Toshin
       #*** 各語句の前後200字を切り出し、つなげる ***
       begin
       #p "[^\n]{0,200}#{word_array.join('|')}[^\n]{0,200}\n?"
-        range_array = str.scan(/[^\n]{0,200}#{word_array.join("|")}[^\n]{0,200}\n?/m).
+        range_array = str.scan(/([^\n]{0,200}#{word_array.join("|")}[^\n]{0,200}\n?)/m).
                       map do |s|
-                        s.gsub!(/#{word_array.join("|")}/m,'<strong>\&</strong>')
-                        s.chomp
+                        s[0].gsub!(/#{word_array.join("|")}/m,'<strong>\&</strong>').chomp
                       end
         str = range_array.join("<br><br>")
         str
