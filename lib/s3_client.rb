@@ -37,12 +37,12 @@ class S3Client
   def fill_tmp_folder
     s3_files = get_list.map{|f| f.sub("toshin/","")}
     tmp_files = Dir.glob(TMP_DIR+'/*.txt').map{|f| f.sub(/.*tmp\//,"")}
-    # スレッド数を5に制限したプールを作成
-    pool = Concurrent::ThreadPoolExecutor.new(max_threads: 5)
+    # スレッド数を64に制限したプールを作成
+    pool = Concurrent::ThreadPoolExecutor.new(max_threads: 64)
     (s3_files-tmp_files).each do |f|
       pool.post do
         File.write(TMP_DIR+"/"+f, read(f))
-        sleep 0.5
+        sleep 0.01
       end
     end
     # プールが終了するのを待つ

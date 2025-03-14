@@ -25,7 +25,7 @@ module SetRange
       str = ans[0].tr("０-９","0-9")
       new_path = path.sub(/\.txt/, joken + ".txt")
       File.write(new_path,str)
-      puts new_path
+      #puts new_path
     else
       err = [File.basename(path),joken]  
     end

@@ -36,6 +36,8 @@ end
 class ToshinApp
   #初期設定
   def initialize
+    @loading_complete = false
+    @loading_thread = nil
     start_file_loading
     @toshin = Toshin.new
     @logger = Logger.new(STDOUT)
@@ -165,17 +167,25 @@ class ToshinApp
   
   #答申テキストファイルを転送
   def start_file_loading
+    p "Started loading text and deviding their! at #{Time.now}"
     @loading_thread = Thread.new do
-     #tmpフォルダにファイルをダウンロードする.
-     S3Client.new.fill_tmp_folder
-     #範囲ごとの個別テキストファイルを作成
-     SetRange.set_each_range_text
-     @loading_complete = true
+      begin
+        #tmpフォルダにファイルをダウンロードする.
+        S3Client.new.fill_tmp_folder
+        #範囲ごとの個別テキストファイルを作成
+        SetRange.set_each_range_text
+        @loading_complete = true
+        p "Ended loading text and devided their! at #{Time.now}"
+      rescue => e
+        puts "Error during file loading: #{e.message}"
+        @loading_complete = false # エラー時はfalseのままにする
+      end
     end
   end
   #答申テキストファイルの転送完了まで待機
   def wait_for_loading
-    @loading_thread&.join # スレッドが終了するまで待機
+    # スレッドが存在し、実行中なら待機
+    @loading_thread.join if @loading_thread&.alive?
   end
   #新規答申の確認･取込みのループ処理
   def start_background_updater
@@ -221,5 +231,5 @@ use TimerMiddleware
 begin
   run ToshinApp.new
 rescue => e
-  send_nifty_mail( ([e.message]<<e.backtrace).join("\n") )
+  send_mail( ([e.message]<<e.backtrace).join("\n") )
 end
