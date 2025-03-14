@@ -475,8 +475,8 @@ class Toshin
     #  end
     def reg_pattern(word_array)
       # 検索語が複数の時は、"[^\n]*(検索語1|検索語2|検索語3).*(検索語1|検索語2|検索語3).*?\n"
-      # という正規表現をつくる。  
-        "[^\n]{0,100}(#{word_array.join("|")})(.*(#{word_array.join("|")}))?[^\n]{0,100}\n?"
+      # という正規表現をつくる。（scanで取得できるように全体を半角括弧で囲う。）
+        "([^\n]{0,100}(#{word_array.join("|")})(.*(#{word_array.join("|")}))?[^\n]{0,100}\n?)"
     end
     #************** 答申のテキストから該当箇所を切り出す *****************
     def exec_search(str,word_array,type)
@@ -508,7 +508,7 @@ class Toshin
       #*** 各語句の前後200字を切り出し、つなげる ***
       begin
       #p "[^\n]{0,200}#{word_array.join('|')}[^\n]{0,200}\n?"
-        range_array = str.scan(/([^\n]{0,200}#{word_array.join("|")}[^\n]{0,200}\n?)/m).
+        range_array = str.scan(/#{reg_pattern(word_array)}/m).
                       map do |s|
                         s[0].gsub!(/#{word_array.join("|")}/m,'<strong>\&</strong>').chomp
                       end
@@ -527,6 +527,20 @@ class Toshin
     #puts "range_joken : #{range_joken}"
     #ユーザーが正規表現を使いやすくする。”\”は取り扱いが難しいので"¥"が使えるようにする。
     word_array.map!{|w| w.gsub('¥',"\\")}
+    #検索語句に半角括弧が含まれるとき、正規表現の特殊ではないと判断されるものはエスケープ処理する。
+    word_array.map! do |w|
+      if w.match(/\(|\)/)
+        if w.match(/\(.*\|.*\)|\(.*\)[\?\*\+\{]/)
+        #正規表現の一部と見なされるときはそのまま
+          w
+        else
+        #正規表現半角括弧ではないと考えらるときは半角括弧をエスケープする。
+          w.gsub( /\(/,'\(' ).gsub( /\)/,'\)' )
+        end
+      else
+        w
+      end
+    end
     #検索語に含まれる数字をすべて半角に変換する。
     word_array.map!{|w| w.tr("０-９","0-9")}
 
