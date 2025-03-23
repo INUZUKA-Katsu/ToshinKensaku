@@ -90,6 +90,8 @@ GEM
       nio4r (~> 2.0)
     racc (1.8.1)
     rack (3.1.11)
+    rackup (2.2.1)
+      rack (>= 3)
     ruby-rc4 (0.1.5)
     rubyntlm (0.6.5)
       base64
@@ -113,6 +115,7 @@ DEPENDENCIES
   pdf-reader
   puma
   rack
+  rackup
 
 RUBY VERSION
    ruby 3.2.4p170

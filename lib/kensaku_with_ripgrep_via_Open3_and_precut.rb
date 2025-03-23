@@ -433,12 +433,16 @@ class Toshin
         # OR検索: 単語を | で結合した正規表現で一度に検索
         search_terms = word_array.join('|')
         stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_terms, *files)
+        p "status.exitstatus: #{status.exitstatus}"
+        p "status.success?: #{status.success?.to_s}"
         matching_file_path_array = stdout.split("\n")
       elsif type == 'and'
         if word_array.size == 1
           # 単語が1つの場合: 直接検索
           search_terms = word_array[0]
           stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_terms, *files)
+          p "status.exitstatus: #{status.exitstatus}"
+          p "status.success?: #{status.success?.to_s}"
           matching_file_path_array = stdout.split("\n")
         else
           # 複数単語のAND検索: 各単語で順次フィルタリング
@@ -446,6 +450,8 @@ class Toshin
           word_array.each do |word|
             # 現在の候補ファイルに対してrgを実行
             stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', word, *matching_file_path_array)
+            p "status.exitstatus: #{status.exitstatus}"
+            p "status.success?: #{status.success?.to_s}"
             if status.success?
               matching_file_path_array = stdout.split("\n")
               break if matching_file_path_array.empty? # マッチがなくなれば終了

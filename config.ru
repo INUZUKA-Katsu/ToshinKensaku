@@ -9,6 +9,7 @@ when :ripgrep
 when :simple
   require_relative 'lib/kensaku.rb'
 end
+require 'rack'
 require 'cgi'
 require 'uri'
 require 'time'
@@ -103,39 +104,39 @@ class ToshinApp
       html.sub!(/<--検索条件-->/,JSON.generate(param))
       html.sub!(/<--結果件数-->/,kensu.to_s)
       html.sub!(/<--検索条件-->/,j_str.to_a.map{|j| j.join(" => ")}.join("<br>"))
-      header["Content-Type"]   = 'text/html'
+      header["content-type"]   = 'text/html'
       response                 = html
     
     elsif req.post? and req.path=="/return" and param.keys.include? "joken"
     #検索結果画面から「戻る」ボタンで検索条件画面に戻るとき、フォームに前回の検索条件を設定して表示する。
-      header["Content-Type"] = 'text/html'
+      header["content-type"] = 'text/html'
       response               = get_index(param)
     #elsif req.path.include? ".css" or req.path.include? ".js"
-    #  header["Content-Type"] = get_type(req.path)
+    #  header["content-type"] = get_type(req.path)
     #  p req.path
     #  response               = File.read(req.path[2,-1]) #左端の"/"をはずす。
     elsif req.post? and req.path=="/kuni_toshin"
       p param.keys
       search_word = param["search_word"]
       url = param["url"]
-      header["Content-Type"] = 'text/html'
+      header["content-type"] = 'text/html'
       response               = get_text_range(url,search_word)
 
     elsif req.path=="/joho/soumu"
       key = URI.decode_www_form(req.fullpath)[0][1]
       p "key => " + key
       res_array = get_soumu_search_result(key)
-      header["Content-Type"] = 'text/html'
+      header["content-type"] = 'text/html'
       response               = File.read("joho/SearchResult.html").
                                  sub(/<--検索結果-->/,res_array.join("\n")).
                                  sub(/<--SearchWord-->/,key)
 
     elsif req.path=="/joho" or req.path=="/joho/" or req.path=="/joho/index.html"
-      header["Content-Type"] = 'text/html'        
+      header["content-type"] = 'text/html'        
       response               = File.read('joho/index.html')
     
     else
-      header["Content-Type"] = 'text/html'        
+      header["content-type"] = 'text/html'        
       response               = File.read('index.html')
     end
     [ 200, header, [response] ]

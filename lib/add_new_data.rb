@@ -58,17 +58,18 @@ module DataProcessor
     open(Dest, "w+b") do |dest|
       dest.write(uri.read)
     end
-    if $poppler
+    begin
       document = Poppler::Document.new(Dest)
-    else
+    rescue NameError
       document = PDF::Reader.new(Dest)
     end
     str = ""
     num = ""
+    toshin_num = ""
     document.pages.each_with_index do |page,i|
-      if $poppler
+      begin
         s = page.get_text
-      else
+      rescue NoMethodError
         s = page.text
       end
       if i == 0
@@ -80,12 +81,10 @@ module DataProcessor
       str = str.toutf8.gsub(" ","").tr("０-９","0-9").gsub(/−\d\d?−/,"").gsub(/^\s*\n+/m,"").
                 sub("紙申審査会","審査会").
                 gsub(/(?<!審査会の結論|審査請求の趣旨|説明要旨|本件処分に対する意見|審査会の判断|結論)\s*\n\s*(?!\s*([１-５ア-ンa-z]\s|\([1-9ｱ-ﾄa-z]\)|（第.部会）|（制度運用調査部会）|別表))/m,"")
-      #file_name = "tmp/#{num}.txt"
-      #File.write(file_name,str)
       file_name = "#{toshin_num}.txt"
-      s3.write(file_name, str)
-      File.write(TMP_DIR+"/"+file_name, str)
-      file_name
+      [file_name,str]
+    else
+      nil
     end
   end
   def get_num_array_from(bango)
@@ -157,14 +156,14 @@ module DataProcessor
     end
     #[ bango,yyyymmdd,toshinbi,jisshikikan,bukai,iin,jorei,seikyu ]
     h = Hash.new
-    h["bango"]=bango
-    h["yyyymmdd"]=yyyymmdd
-    h["toshinbi"]=toshinbi
-    h["jisshikikan"]=jisshikikan
-    h["bukai"]=bukai
-    h["iin"]=iin
-    h["jorei"]=jorei
-    h["seikyu"]=seikyu
+    h[:bango]=bango
+    h[:yyyymmdd]=yyyymmdd
+    h[:toshinbi]=toshinbi
+    h[:jisshikikan]=jisshikikan
+    h[:bukai]=bukai
+    h[:iin]=iin
+    h[:jorei]=jorei
+    h[:seikyu]=seikyu
     h
   end
   def time_stamp()
@@ -191,21 +190,30 @@ module DataProcessor
         time_stamp
         return nil
       end
+      puts "add_new_data"
       puts toshin_url
       puts toshin_kenmei
       file_name_array=[]
       toshin_url.keys.each do |num|
         puts "num => " + num.to_s
-        file_name = get_text_from(URL+toshin_url[num], s3)
+        #Pdfから答申番号と答申本文のテキストを抽出
+        file_name, toshin_text = get_text_from(URL+toshin_url[num], s3)
+        #答申のテキストを答申番号のファイル名で保存
+        s3.write(file_name, toshin_text)
+        File.write(TMP_DIR+"/"+file_name, toshin_text)
         file_name_array << file_name
-        puts file_name
+
+        puts "Got text data form pdf : " + file_name
+        #答申のテキストデータから見出し情報を抽出し、見出配列に追加するハッシュデータを作成
         h = get_midashi_data_from(file_name, s3)
-        p h
+        puts "Got midashi data" 
+        puts h
         puts 'h[:bango] => ' + h[:bango].to_s
         h[:num_array] = get_num_array_from(h[:bango])
         h[:file_name] = file_name
         h[:url]       = toshin_url[num]
         h[:kenmei]    = toshin_kenmei[num]
+        p h
         midashi << h
       end
     

@@ -1,26 +1,62 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>答申データベース検索</title>
-<link rel="shortcut icon" type="image/x-icon" href="/images/favicon.ico"/>
-<link rel="stylesheet" media="screen" href="/css/common.css"/>
-<link rel="stylesheet" media="screen" href="/css/bootstrap.css"/>
-<style type="text/css">
-  div.right{ float:right;}
-</style>
+  <meta charset="UTF-8">
+  <title>答申データベース検索</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" media="screen" href="/css/common.css"/>
+  <link rel="stylesheet" media="screen" href="/css/bootstrap.css"/>
+  <style type="text/css">
+    div.right{ float:right;}
+    .container.header {
+    	width: 900px;
+    	margin:0 auto 0 auto;
+    	position: relative;
+    }
+	#warning {
+            display: none;
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+            width:300px;
+			position: absolute;
+            top: 40;
+            right: 0; /* 親要素（#mainBlock）の右端に配置 */
+            /* white-space: nowrap; */
+    }
+    #warning p {text-indent: -2em;
+                padding-left:2.5em;
+    }
+    #fileList {
+        display: none;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid red;
+        background-color: #ffe6e6;
+    }
+    button {
+        margin: 5px 0 0 1.5em;
+        cursor: pointer;
+    }
+  </style>
 </head>
 <body data-spy="scroll">
 	<form method="post" action="/return">
 	<input type="hidden" name="joken" value='<--検索条件-->'>
 	<div id="wrap" class="root">
-		<header class="header">
+    <header class="header">
 			<div class="container header">
 				<div class="lfloatbox">
 					<h4><a href="/report/" class="header-link">横浜市情報公開・個人情報保護審査会</a></h4>
 					<h2><a href="/report/" class="header-link">答申データベース検索</a></h2>
 				</div>
-			</div>
+                <div id="warning">
+                    <p>注意: 検索できなかった答申があります。1,2分後にもう一度検索してみて下さい。</p>
+                    <button id="showFilesBtn">検索できなかった答申一覧を表示</button>
+                    <div id="fileList"></div>
+                </div>                
+            </div>
 		</header>
 		<div id="container-wrap">
 			<div class="container">
@@ -35,5 +71,31 @@
 		</div>
 	</div>
 	</form>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch("/file_check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json()) // JSONとして処理
+            .then(data => {
+                if (data !== "ok") { // "ok" でない場合はファイルリストを表示
+                    document.getElementById("warning").style.display = "block";
+                    
+                    const fileListDiv = document.getElementById("fileList");
+                    const fileNames = data.join("<br>"); // ファイル名を改行区切りで結合
+                    fileListDiv.innerHTML = fileNames;
+                    
+                    document.getElementById("showFilesBtn").addEventListener("click", () => {
+                        event.preventDefault(); // フォームの送信を防ぐ
+                        fileListDiv.style.display = (fileListDiv.style.display === "none") ? "block" : "none";
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        });
+    </script>
 </body>
 </html>
