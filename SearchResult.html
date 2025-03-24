@@ -17,7 +17,7 @@
 	#warning {
             display: none;
             color: red;
-            font-weight: bold;
+            font-weight: normal;
             margin-top: 10px;
             width:300px;
 			position: absolute;
@@ -33,7 +33,6 @@
         margin-top: 10px;
         padding: 10px;
         border: 1px solid red;
-        background-color: #ffe6e6;
     }
     button {
         margin: 5px 0 0 1.5em;
@@ -54,7 +53,7 @@
                 <div id="warning">
                     <p>注意: 検索できなかった答申があります。1,2分後にもう一度検索してみて下さい。</p>
                     <button id="showFilesBtn">検索できなかった答申一覧を表示</button>
-                    <div id="fileList"></div>
+                    <div id="fileList"><--missing_files--></div>
                 </div>                
             </div>
 		</header>
@@ -73,29 +72,47 @@
 	</form>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            fetch("/file_check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            })
-            .then(response => response.json()) // JSONとして処理
-            .then(data => {
-                if (data !== "ok") { // "ok" でない場合はファイルリストを表示
-                    document.getElementById("warning").style.display = "block";
-                    
-                    const fileListDiv = document.getElementById("fileList");
-                    const fileNames = data.join("<br>"); // ファイル名を改行区切りで結合
-                    fileListDiv.innerHTML = fileNames;
-                    
-                    document.getElementById("showFilesBtn").addEventListener("click", () => {
+            const fileListDiv = document.getElementById("fileList");
+            if (fileListDiv.innerHTML.match(/答申/)) {
+                document.getElementById("warning").style.display = "block";
+                fileListDiv.style.display = "none"
+                document.getElementById("showFilesBtn").addEventListener("click", () => {
                         event.preventDefault(); // フォームの送信を防ぐ
                         fileListDiv.style.display = (fileListDiv.style.display === "none") ? "block" : "none";
-                    });
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-            });
+                });                
+            }
         });
+        function determineSearchType() {
+            // input要素を取得
+            const inputElement = document.querySelector('input[name="joken"]');
+            if (!inputElement) {
+                console.error('input要素が見つかりません');
+                return;
+            }
+            // valueをオブジェクトとしてパース
+            try {
+                const value = inputElement.value;
+                const obj = JSON.parse(value.replace(/([a-zA-Z0-9_]+):/g, '"$1":'));
+                // 確認するキー
+                const keys = [
+                    "ketsuronSearchQuery",
+                    "seikyuninSearchQuery",
+                    "jisshikikanSearchQuery",
+                    "shinsakaiSearchQuery",
+                    "shinsakailastSearchQuery"
+                ];
+                // SearchQueryの判定
+                if (obj["searchQuery"] && obj["searchQuery"] !== "") {
+                    return "用語検索";
+                }
+                // 5つのキーのうち1つでも文字列なら詳細用語検索
+                const hasValue = keys.some(key => obj[key] !== "");
+                return hasValue ? "詳細用語検索" : "";
+            } catch (error) {
+                console.error('オブジェクトの解析に失敗しました', error);
+                return "";
+            }
+        }
     </script>
 </body>
 </html>

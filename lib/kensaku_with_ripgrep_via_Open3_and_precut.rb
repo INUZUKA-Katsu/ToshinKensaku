@@ -403,8 +403,9 @@ class Toshin
   #   メイン関数（config.ruから呼び出される）
   #########################################
   def get_hinagata_data(joken)
+    missing_files = nil
     if joken.keys.include? :freeWord
-      selected = freeWord_search(joken)
+      selected, missing_files = freeWord_search(joken)
     else
       selected = search(joken)
     end
@@ -421,64 +422,55 @@ class Toshin
       h.delete(:seikyu)
       res[bango] = h
     end
-    res   # config.ruに返す
+    [res, missing_files]   # config.ruに返す
   end
 
   def freeWord_search(joken)
     def ripgrep(file_name_array, word_array, type)
+      def get_matching_files(search_word, files, missing_files=nil)
+        stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_word, *files)
+        if status.success?      
+          matching_file_path_array = stdout.split("\n")
+        elsif status.exitstatus == 2
+          errors = stderr.split("\n")
+          critical_errors = errors.reject { |e| e.include?("No such file or directory") }
+          if critical_errors.empty?           # "No such file or directory"以外のエラーはないとき
+            matching_file_path_array = stdout.split("\n")
+            missing_files = errors.map{|err| err.match(/答申[^a-z]+/)[0]}
+          else  "No such file or directory"   # "No such file or directory"以外のエラーがあるとき
+            matching_file_path_array = []
+          end
+        else
+          matching_file_path_array = []
+        end
+        [matching_file_path_array, missing_files]
+      end
+
       # ファイルパスを構築
       files = file_name_array.map { |file_name| "#{TMP_DIR}/#{file_name}" }
-      #puts files
+
       if type == 'or'
         # OR検索: 単語を | で結合した正規表現で一度に検索
         search_terms = word_array.join('|')
-        stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_terms, *files)
-        p "status.exitstatus: #{status.exitstatus}"
-        p "status.success?: #{status.success?.to_s}"
-        matching_file_path_array = stdout.split("\n")
+        matching_file_path_array, missing_files = get_matching_files(search_terms, files)
+
       elsif type == 'and'
         if word_array.size == 1
           # 単語が1つの場合: 直接検索
           search_terms = word_array[0]
-          stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_terms, *files)
-          p "status.exitstatus: #{status.exitstatus}"
-          p "status.success?: #{status.success?.to_s}"
-          matching_file_path_array = stdout.split("\n")
+          matching_file_path_array, missing_files = get_matching_files(search_terms, files)
         else
           # 複数単語のAND検索: 各単語で順次フィルタリング
           matching_file_path_array = files.dup # 初期候補は全ファイル
+          missing_files = nil
           word_array.each do |word|
-            # 現在の候補ファイルに対してrgを実行
-            stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', word, *matching_file_path_array)
-            p "status.exitstatus: #{status.exitstatus}"
-            p "status.success?: #{status.success?.to_s}"
-            if status.success?
-              matching_file_path_array = stdout.split("\n")
+            matching_file_path_array, missing_files = get_matching_files(word, matching_file_path_array, missing_files)
               break if matching_file_path_array.empty? # マッチがなくなれば終了
-            else
-              matching_file_path_array = [] # エラー時は空配列
-              break
-            end
           end
         end
-      else
-        # 不正なtypeの場合
-        matching_file_path_array = []
       end
-      matching_file_path_array
+      [matching_file_path_array, missing_files]
     end
-    #def text_range(joken)
-    #    honbun_end = '(.*?(委員.{3,10}){3}|.*?《参考》|.*?^( |　)*別表|.*?別表[0-9０-９]*( |　)*$|.*?別( |　)+表|.*?審査会の経過|.*)'
-    #    case joken
-    #    when ""             ;  nil
-    #    when "ketsuron"     ;  "審査会の結論.*?(?=((異議)?申立て|審査請求|申出)の趣旨)"
-    #    when "jisshikikan"  ;  "(理由|に関する)説明要旨.*?(?=((処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見)"
-    #    when "seikyunin"    ;  "((処分|決定|回答)等?に対する|申\立人の|審査請求人の)意見.*?(?=審査会の判断)"
-    #    when "shinsakai"    ;  "審査会の判断.*?" + honbun_end
-    #    when "shinsakailast";  '(結( |　)+論|[）)]( |　)*結論|[0-9０-９]( |　)*結論|(?<!審査会の)結( |　)*論\n).*?' + honbun_end
-    #    else  nil
-    #    end
-    #  end
     def reg_pattern(word_array)
       # 検索語が複数の時は、"[^\n]*(検索語1|検索語2|検索語3).*(検索語1|検索語2|検索語3).*?\n"
       # という正規表現をつくる。（scanで取得できるように全体を半角括弧で囲う。）
@@ -486,31 +478,9 @@ class Toshin
     end
     #************** 答申のテキストから該当箇所を切り出す *****************
     def exec_search(str,word_array,type)
-      #審査会の判断など指定された範囲を切り出す。
-      #if range_joken and ans = str.match(/#{range_joken}/m)
-      #  str = ans[0]
-      #end
       #全角数字を半角に変換
       str = str.tr("０-９","0-9")
-      #指定範囲に検索語句が含まれるか調べ、含まれない場合は除外
-      ########## ripgrepで仕分け済み ###########
-      #if range_joken
-      #  if type=='or'
-      #    #マッチする語句が一つもなければそのファイルは終了
-      #    res = nil
-      #    word_array.each do |k|
-      #      res = true if str.match(/#{k}/m)
-      #    end
-      #    return nil unless res
-      #    #return nil unless str.match(/#{word_array.join('|')}/)
-      #  else
-      #    #マッチしない語句が一つでもあればそのファイルは終了
-      #    word_array.each do |k|
-      #      return nil unless str.match(/#{k}/m)
-      #    end
-      #    #return nil unless str.match(/#{word_array.map{|w| "(?=.*#{w})"}.join()}/)
-      #  end
-      #end
+
       #*** 各語句の前後200字を切り出し、つなげる ***
       begin
       #p "[^\n]{0,200}#{word_array.join('|')}[^\n]{0,200}\n?"
@@ -569,33 +539,12 @@ class Toshin
         end 
       }
     end
-    file_path_array = ripgrep(file_name_array, word_array, type)
+    file_path_array, missing_files = ripgrep(file_name_array, word_array, type)
     puts "ripgrep => 対象は #{file_path_array.size} 件"
 
     file_path_array.each{|path| p path if path.size>100}
     puts
-    puts
 
-    #p "file_path_array ↓"
-    #p file_path_array
-    #****** 対象ファイルによってmidashi配列を絞り込む *********
-    #file_name_array = file_path_array.map{|path| File.basename(path)}
-    #selected.select!{|h| file_name_array.include? h[:file_name]}
-    
-    #******* 対象ファイルから該当箇所を切り出す。******************
-    #res={}
-    #selected = selected.each do |h|
-    #  path = "#{TMP_DIR}/#{h[:file_name]}"
-    #  str = File.read(path).encode("UTF-8", :invalid => :replace)
-    #  matched_range = exec_search(str,word_array,type,range_joken)
-    #  if matched_range
-    #    h[:matched_range] = matched_range
-    #  end
-    #end.select{|h| h.keys.include?(:matched_range)}
-    ##puts selected
-    #return selected
-if 1==1
-    #results = Parallel.map(selected, in_processes: Etc.nprocessors) do |h|
     results = Parallel.map(file_path_array, in_processes: Etc.nprocessors) do |path|
       #p "処理中: PID: #{Process.pid}"
       retry_num = 0
@@ -632,50 +581,6 @@ if 1==1
     end
     File.write("parallel_result.json", JSON.generate(results)) #debug用
     return results.compact # nilを除外
-else
-    #Herokuのリソースエラーにならないようにスレッド数を200に制限.
-    res=[]
-    n = (selected.size/200.0).ceil
-    n.times do |i|
-      thread = []
-      st = i*200
-      selected[st,200].each do |h|
-        thread << Thread.new do
-          file_name = h[:file_name]
-          retry_num = 0
-          begin
-            str = File.read(TMP_DIR + "/" + file_name).encode("UTF-8", :invalid => :replace)
-          rescue
-            if File.exist?(TMP_DIR + "/" + file_name)
-              retry_num += 1
-              if retry_num < 5
-                p file_name + "の読み込みエラー ⇒ リトライします!(#{retry_num}回目)"
-                retry
-              else
-                p file_name + "を読み込めませんでした!"
-              end
-            else
-              p file_name + "の読み込みエラー ファイルがありません!"
-            end
-            str = " "
-          end
-          matched_range = exec_search(str,word_array,type,range_joken)
-          if matched_range
-            h[:matched_range] = matched_range
-            res << h
-          end
-        end
-      end
-      thread.each(&:join)
-    end
-    #File.write("thread_result.json", JSON.generate(res))  #debug用
-    res
-end
-  end
-  def err_logger(e)
-    err = [e.message] << e.backtrace 
-    err_str = err.join("\n")
-    @logger.error err.str
   end
 end
 

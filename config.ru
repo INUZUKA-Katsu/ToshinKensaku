@@ -13,6 +13,7 @@ require 'rack'
 require 'cgi'
 require 'uri'
 require 'time'
+require 'json'
 require_relative 'lib/hinagata.rb'
 require_relative 'lib/send_nifty_mail.rb'
 require_relative 'lib/add_new_data.rb'
@@ -73,7 +74,7 @@ class ToshinApp
       p joken
       #p "joken => " + JSON.generate(joken)
       wait_for_loading #テキストファイルの転送と範囲テキストデータ作成の完了待ち
-      h = @toshin.get_hinagata_data(joken)
+      h, missing_files = @toshin.get_hinagata_data(joken)
       kensu = h.size
       #p "kensu => "+kensu.to_s
       if kensu>0
@@ -104,6 +105,10 @@ class ToshinApp
       html.sub!(/<--検索条件-->/,JSON.generate(param))
       html.sub!(/<--結果件数-->/,kensu.to_s)
       html.sub!(/<--検索条件-->/,j_str.to_a.map{|j| j.join(" => ")}.join("<br>"))
+      if missing_files
+        html.sub!(/<--missing_files-->/,missing_files.join(", ")) 
+        start_file_loading # 別スレッドで不足するファイルを補充する
+      end
       header["content-type"]   = 'text/html'
       response                 = html
     
@@ -178,15 +183,29 @@ class ToshinApp
         @loading_complete = true
         p "Ended loading text and devided their! at #{Time.now}"
       rescue => e
-        puts "Error during file loading: #{e.message}"
+        puts "Error in start_file_loading: #{e.message}" # ログ出力
+        puts e.backtrace.join("\n")
         @loading_complete = false # エラー時はfalseのままにする
       end
     end
   end
   #答申テキストファイルの転送完了まで待機
   def wait_for_loading
-    # スレッドが存在し、実行中なら待機
+    # すでにロードが完了していれば何もしない
+    return if @loading_complete
+  
+    # `@loading_thread` が `nil` または終了している場合は再度ロードを開始
+    if @loading_thread.nil? || !@loading_thread.alive?
+      start_file_loading
+    end
+  
+    # スレッドの完了を待つ
     @loading_thread.join if @loading_thread&.alive?
+  
+    # 念のため `@loading_complete` が `true` になるまで待機
+    until @loading_complete
+      sleep 0.1
+    end
   end
   #新規答申の確認･取込みのループ処理
   def start_background_updater
