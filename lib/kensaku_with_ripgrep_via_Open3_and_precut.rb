@@ -580,7 +580,7 @@ class Toshin
       end
     end
     File.write("parallel_result.json", JSON.generate(results)) #debug用
-    return results.compact # nilを除外
+    return [results.compact,missing_files] # nilを除外
   end
 end
 
