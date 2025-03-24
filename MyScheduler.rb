@@ -7,11 +7,14 @@ jst = Time.at(Time.now, in: "+09:00")
 if jst.saturday? or jst.sunday?
   if ("12:30".."23:00")===jst.strftime("%H:%M")
     #`curl http://toshin-kensaku.herokuapp.com/`
-    p Net::HTTP.get(URI.parse('http://toshin-kensaku.herokuapp.com/'))
+    puts Net::HTTP.get(URI.parse('http://toshin-kensaku.herokuapp.com/'))
   end
 else
   if ("08:30".."22:00")===jst.strftime("%H:%M")
     #`curl http://toshin-kensaku.herokuapp.com/`
-    p Net::HTTP.get(URI.parse('http://toshin-kensaku.herokuapp.com/'))
+    puts Net::HTTP.get(URI.parse('http://toshin-kensaku.herokuapp.com/'))
   end
 end
+
+# "Cloud Run"の答申検索
+puts Net::HTTP.get(URI.parse('https://rack-app-806339164409.asia-northeast1.run.app/file_check'))
