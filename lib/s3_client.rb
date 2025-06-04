@@ -29,7 +29,7 @@ class S3Client
   def get_list
     res = []
     @bucket.objects(prefix: "toshin/").each do |obj|
-      res << obj.key if obj.key.include? ".txt"
+      res << obj.key
     end
     res
   end

@@ -49,6 +49,10 @@ def postData_arrange(param)
     joken[:freeWordType] = param["shinsakailastSearchType"]
     range = "審査会の判断の結論部分"
   end
+  
+  p "joken[:freeWordRange]"
+  p joken[:freeWordRange]
+  
   if joken[:freeWordType]=="and"
     j_str[range]= joken[:freeWord].map{|w| '"'+w+'"'}.join(" かつ ")
   elsif joken[:freeWordType]=="or"
@@ -199,7 +203,14 @@ def postData_arrange(param)
   	num = param["reportNoToNo"]
     range = param["reportNoRange"]
     if range=="kan"
+      p 'param["reportNoToNo"]'
+      p param["reportNoToNo"]
+      
       joken[:num][:to]=num
+
+      p 'joken[:num][:to]'
+      p joken[:num][:to]
+      
       j_str["答申番号"] += "第#{num}号"
     end
   end
@@ -221,16 +232,25 @@ end
 
 class Toshin
   attr_reader :midashi
+
   ROOT_DIR = File.expand_path('..', __dir__)
   TMP_DIR = File.join(ROOT_DIR, 'tmp')
+  URL = "https://www.city.yokohama.lg.jp/city-info/gyosei-kansa/joho/kokai/johokokaishinsakai/shinsakai/"
+
   def initialize
     @s3 = S3Client.new
-    @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
+    if File.exist? TMP_DIR+"/"+"bango_hizuke_kikan.json"
+      @midashi = JSON.parse(File.read(TMP_DIR+"/"+"bango_hizuke_kikan.json"), symbolize_names: true)
+    else
+      @midashi = JSON.parse(@s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
+    end
     @logger = Logger.new(STDOUT)
   end
   #フリーワード以外の条件から対象ファイルを絞り込む。
   def search(joken) #jokenはハッシュ
-    selected = @midashi
+    selected = @midashi.map(&:dup) #深いコピー（配列の要素を個々にコピーする。@midashi.map{|elm| elm.dup}の省略記法）
+    p :no_joken_without_word
+    p selected.size
     begin
       if joken.keys.include? :jorei
          selected = selected.select{|h|
@@ -238,7 +258,9 @@ class Toshin
            joken[:jorei].include?(h[:jorei])
          }
       end
-      p :s1
+      p :key_is_jorei
+      p "joken[:jorei]"
+      p joken[:jorei]
       p selected.size
     rescue =>e
       err_logger(e)
@@ -249,7 +271,9 @@ class Toshin
            h[:seikyu] and h[:seikyu]!="" and joken[:seikyu].include?(h[:seikyu])
          }
       end
-      p :s2
+      p :key_is_seikyu
+      p "joken[:seikyu]"
+      p joken[:seikyu]
       p selected.size
     rescue =>e
       err_logger(e)
@@ -263,14 +287,16 @@ class Toshin
            if j.keys.size==2
              a = (j[:from]..j[:to]).to_a
              selected = selected.select{|h| (h[:num_array] & a).size>0 }
-           elsif j.keys[0]==:from
+            elsif j.keys[0]==:from
              selected = selected.select{|h| j[:from].to_i <= h[:num_array].max.to_i }
            elsif j.keys[0]==:to
              selected = selected.select{|h| j[:to].to_i >= h[:num_array].min.to_i }
            end
          end
       end
-      p :s3
+      p :key_is_num
+      p "joken[:num]"
+      p joken[:num]
       p selected.size
     rescue =>e
       err_logger(e)
@@ -279,7 +305,9 @@ class Toshin
       if joken.keys.include? :bango
          selected = selected.select{|h| h[:bango].include?(joken[:bango])}
       end
-      p :s4
+      p :key_is_bango
+      p "joken[:bango]"
+      p joken[:bango]
       p selected.size
     rescue =>e
       err_logger(e)
@@ -299,7 +327,7 @@ class Toshin
            end
          end
       end
-      p :s5
+      p :keys_is_yyyymmdd
       p selected.size
     rescue =>e
       err_logger(e)
@@ -308,7 +336,7 @@ class Toshin
       if joken.keys.include? :toshinbi
          selected = selected.select{|h| h[:toshinbi].include?(joken[:toshinbi])}
       end
-      p :s6
+      p :key_is_toshinbi
       p selected.size
     rescue =>e
       err_logger(e)
@@ -317,7 +345,7 @@ class Toshin
       if joken.keys.include? :kikan
          selected = selected.select{|h| h[:jisshikikan].include?(joken[:kikan])}
       end
-      p :s7
+      p :key_is_kikan
       p selected.size
     rescue =>e
       err_logger(e)
@@ -328,7 +356,7 @@ class Toshin
            selected = selected.select{|h| h[:jisshikikan].include?(k)}
          end
       end
-      p :s8
+      p :Key_is_kikanQuery
       p selected.size
     rescue =>e
       err_logger(e)
@@ -337,7 +365,7 @@ class Toshin
       if joken.keys.include? :bukai
          selected = selected.select{|h| h[:bukai].include?(joken[:bukai])}
       end
-      p :s9
+      p :key_is_bukai
       p selected.size
     rescue =>e
       err_logger(e)
@@ -351,7 +379,7 @@ class Toshin
          end
          selected = ary
       end
-      p :s10
+      p :key_is_bukaiQuery
       p selected.size
     rescue =>e
       err_logger(e)
@@ -365,6 +393,8 @@ class Toshin
          end
          selected = ary
       end
+      p :key_is_iinQuery
+      p selected.size
     rescue =>e
       err_logger(e)
     end
@@ -414,6 +444,8 @@ class Toshin
     p 'selected.size: ' + selected.size.to_s
     selected.each do |h|
       bango = h[:bango]
+      p bango
+      h[:url]=URL+h[:url]
       h.delete(:bango)
       h.delete(:yyyymmdd)
       h.delete(:file_name)
@@ -431,6 +463,9 @@ class Toshin
         stdout, stderr, status = Open3.capture3('rg', '--no-ignore', '--files-with-matches', '-l', search_word, *files)
         if status.success?      
           matching_file_path_array = stdout.split("\n")
+          p files.size
+          puts files
+          p matching_file_path_array.size
         elsif status.exitstatus == 2
           errors = stderr.split("\n")
           critical_errors = errors.reject { |e| e.include?("No such file or directory") }
@@ -469,6 +504,7 @@ class Toshin
           end
         end
       end
+      p "matching_file_path_array => " + matching_file_path_array.size.to_s
       [matching_file_path_array, missing_files]
     end
     def reg_pattern(word_array)
@@ -581,6 +617,11 @@ class Toshin
     end
     File.write("parallel_result.json", JSON.generate(results)) #debug用
     return [results.compact,missing_files] # nilを除外
+  end
+  def err_logger(e)
+    err = [e.message, *e.backtrace] 
+    err_str = err.join("\n")
+    @logger.error err_str
   end
 end
 

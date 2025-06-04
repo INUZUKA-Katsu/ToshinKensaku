@@ -64,6 +64,31 @@ module SetRange
     p "end of pool"
   end
 
+  #スケジューラで夜間に実行する。確実を期しスレッド処理は行わない。
+  def set_each_range_text_in_batch_process(file_name_array)
+    p "start set_each_range_text"
+    s3 = S3Client.new
+    joken_array = ["ketsuron","jisshikikan","seikyunin","shinsakai","shinsakailast"]
+    output_array=[]
+    joken_array.each do |joken|
+      p joken
+      pattern = /#{self.text_range(joken)}/m
+      file_name_array.each do |file|
+        output_file = file.sub(/\.txt/, joken + ".txt")
+        unless s3.exist? output_file
+          content = s3.read(file)
+          extracted = self.extract_text(content, pattern, file)
+          puts output_file
+          puts extracted
+          puts
+          s3.write(output_file, extracted)
+          output_array << output_file
+        end
+      end
+    end
+    p "ectracted text: #{output_array.size} saved ex. #{output_array[0]}"
+  end
+
   #tmpフォルダのファイルに不足がないかチェックする
   def file_check(midashi,for_enduser=nil)
     puts for_enduser

@@ -9,6 +9,7 @@ rescue LoadError
 end
 require_relative 'send_nifty_mail'
 require_relative 's3_client'
+require_relative 'set_range_text'
 
 module DataProcessor
   extend self
@@ -170,16 +171,18 @@ module DataProcessor
     File.write("#{TMP_DIR}/search_new_pdf.txt",Time.now)
   end
   
-  def self.add_new_data(logger,toshin)
+  def self.add_new_data(logger,toshin=nil)
     begin
       # ************* ログ出力 ********************
       logger.info "Loop task start at #{Time.now}"
       # ******************************************
       
       s3 = S3Client.new
-      #midashi = JSON.parse(File.read("#{TMP_DIR}/bango_hizuke_kikan.json"))
-      #midashi = JSON.parse(s3.read("bango_hizuke_kikan.json"))
-      midashi = toshin.midashi.dup
+      unless toshin
+        midashi = JSON.parse(s3.read("bango_hizuke_kikan.json"), symbolize_names: true)
+      else
+        midashi = toshin.midashi.map(&:dup)
+      end
       p midashi
       #保存済みの最新答申番号
       saved_max_num = midashi.map{|data| data[:num_array][0].to_i}.max
@@ -200,7 +203,7 @@ module DataProcessor
         file_name, toshin_text = get_text_from(URL+toshin_url[num], s3)
         #答申のテキストを答申番号のファイル名で保存
         s3.write(file_name, toshin_text)
-        File.write(TMP_DIR+"/"+file_name, toshin_text)
+        File.write(TMP_DIR+"/"+file_name, toshin_text) if Dir.exist? TMP_DIR
         file_name_array << file_name
 
         puts "Got text data form pdf : " + file_name
@@ -221,7 +224,7 @@ module DataProcessor
       #File.write("#{TMP_DIR}/bango_hizuke_kikan.json",JSON.generate(midashi))
       json = JSON.generate(midashi)
       s3.write("bango_hizuke_kikan.json", json)
-      File.write("#{TMP_DIR}/bango_hizuke_kikan.json", json)
+      File.write("#{TMP_DIR}/bango_hizuke_kikan.json", json) if Dir.exist? TMP_DIR
       time_stamp
     rescue => e
       err = [e.message] << e.backtrace 
@@ -237,9 +240,10 @@ module DataProcessor
   end
 end
 
-##********** 実行テスト ************
-#require_relative 'kensaku_with_ripgrep_via_Open3_and_precut'
-#Encoding.default_external = "utf-8"
-#logger=Logger.new(STDOUT)
-#toshin=Toshin.new
-#puts DataProcessor.add_new_data(logger,toshin)
+##********** 実行 ************
+Encoding.default_external = "utf-8"
+logger=Logger.new(STDOUT)
+new_files = DataProcessor.add_new_data(logger)
+if new_files
+  SetRange.set_each_range_text_in_batch_process(new_files)
+end

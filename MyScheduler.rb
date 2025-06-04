@@ -16,5 +16,10 @@ else
   end
 end
 
+#バッチ処理
+if ("03:00".."03:20")===jst.strftime("%H:%M")
+  require_relative 'lib/add_new_data'
+end
+
 # "Cloud Run"の答申検索
 puts Net::HTTP.get(URI.parse('https://rack-app-806339164409.asia-northeast1.run.app/file_check'))

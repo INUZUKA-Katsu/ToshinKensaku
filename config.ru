@@ -16,8 +16,8 @@ require 'time'
 require 'json'
 require_relative 'lib/hinagata.rb'
 require_relative 'lib/send_nifty_mail.rb'
-require_relative 'lib/add_new_data.rb'
-require_relative 'lib/set_range_text.rb'
+#require_relative 'lib/add_new_data.rb' #夜間バッチに変更
+#require_relative 'lib/set_range_text.rb'
 require_relative 'joho/soumu.rb'
 
 Encoding.default_external = "utf-8" #アプリ全体の設定
@@ -43,9 +43,9 @@ class ToshinApp
     start_file_loading
     @toshin = Toshin.new
     @logger = Logger.new(STDOUT)
-    @running = true
-    @updater_thread = start_background_updater
-    at_exit { stop_background_updater }
+    #@running = true
+    ##@updater_thread = start_background_updater
+    #at_exit { stop_background_updater }
   end
   # callメソッドはenvを受け取り、3つの値(StatusCode, Headers, Body)を配列として返す
   def call(env)
@@ -73,7 +73,7 @@ class ToshinApp
       end
       p joken
       #p "joken => " + JSON.generate(joken)
-      wait_for_loading #テキストファイルの転送と範囲テキストデータ作成の完了待ち
+      ##wait_for_loading #テキストファイルの転送と範囲テキストデータ作成の完了待ち
       h, missing_files = @toshin.get_hinagata_data(joken)
       kensu = h.size
       #p "kensu => "+kensu.to_s
@@ -84,6 +84,7 @@ class ToshinApp
         else
           hinagata = HINAGATA.sub(/<!--freeWord_search_start-->.*<!--freeWord_search_end-->/m,"")
         end
+        #p h
         h.keys.sort_by{|bango| bango.match(/\d+/)[0].to_i}.reverse.each_with_index do |bango,i|
         	 p bango unless h[bango][:url]
            res[i] = hinagata
@@ -93,7 +94,7 @@ class ToshinApp
            .sub(/<--部会-->/,h[bango][:bukai])
            .sub(/<--実施機関-->/,h[bango][:jisshikikan])
            .sub(/<--件名-->/,h[bango][:kenmei])
-           .sub(/<--URL-->/,DataProcessor::URL+h[bango][:url])
+           .sub(/<--URL-->/,h[bango][:url])
            if joken.keys.include? :freeWord
              res[i].sub!(/<--該当部分-->/,h[bango][:matched_range])
            end
@@ -107,7 +108,7 @@ class ToshinApp
       html.sub!(/<--検索条件-->/,j_str.to_a.map{|j| j.join(" => ")}.join("<br>"))
       if missing_files
         html.sub!(/<--missing_files-->/,missing_files.join(", ")) 
-        start_file_loading # 別スレッドで不足するファイルを補充する
+        #start_file_loading # 別スレッドで不足するファイルを補充する
       end
       header["content-type"]   = 'text/html'
       response                 = html
@@ -178,8 +179,8 @@ class ToshinApp
       begin
         #tmpフォルダにファイルをダウンロードする.
         S3Client.new.fill_tmp_folder
-        #範囲ごとの個別テキストファイルを作成
-        SetRange.set_each_range_text
+        ##範囲ごとの個別テキストファイルを作成 ⇒ 予め作成してAWSに保存しておく方式に変更
+        #SetRange.set_each_range_text
         @loading_complete = true
         p "Ended loading text and devided their! at #{Time.now}"
       rescue => e
@@ -207,7 +208,7 @@ class ToshinApp
       sleep 0.1
     end
   end
-  #新規答申の確認･取込みのループ処理
+  #新規答申の確認･取込みのループ処理（使わない）
   def start_background_updater
     Thread.new do
       while @running
