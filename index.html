@@ -13,7 +13,7 @@
 <script type="text/javascript">
   function form_reset(){
     //document.forms[0].reset(); 検索結果から戻ったときはhtml自体を書き換えているので"form.reset"では元に戻せない。
-    var namesA = {"johoKokai":true, "kojinjohoHogo":true, "kaijiSeikyu":true, "teiseiSeikyu":false, "teishiSeikyu":false};
+    var namesA = {"johoKokai":true, "kojinjohoHogo":true, "kaijiSeikyu":true, "teiseiSeikyu":true, "teishiSeikyu":true};
     var namesB = ["searchType", "searchType", "ketsuronSearchType", "ketsuronSearchType", "seikyuninSearchType", "seikyuninSearchType", "jisshikikanSearchType", "jisshikikanSearchType", "shinsakaiSearchType", "shinsakaiSearchType", "shinsakailastSearchType", "shinsakailastSearchType"];
     var namesC = ["bukai", "jisshiKikan", "reportDateFromEra", "reportDateRange", "reportDateToEra", "reportNoRange"];
     var namesD = ["searchQuery", "ketsuronSearchQuery", "seikyuninSearchQuery", "jisshikikanSearchQuery", "shinsakaiSearchQuery", "shinsakailastSearchQuery", "bukaiSearchQuery", "iinSearchQuery", "jisshiaKikanQuery", "reportDateFromYear", "reportDateFromMonth", "reportDateFromDate", "reportDateToYear", "reportDateToMonth", "reportDateToDate", "reportNoFromNo", "reportNoToNo"];
@@ -118,9 +118,9 @@
 							<tr>
 								<td><input type="checkbox" name="kaijiSeikyu" value="on" checked="checked" class="checkbox">開示請求</td>
 								<td width="10"><br></td>
-								<td><input type="checkbox" name="teiseiSeikyu" value="on" class="checkbox">訂正請求</td>
+								<td><input type="checkbox" name="teiseiSeikyu" value="on" checked="checked" class="checkbox">訂正請求</td>
 								<td width="10"><br></td>
-								<td><input type="checkbox" name="teishiSeikyu" value="on" class="checkbox">利用停止請求</td>
+								<td><input type="checkbox" name="teishiSeikyu" value="on" checked="checked" class="checkbox">利用停止請求</td>
 							</tr>
 						</table>
 						<div class="search-hint">
