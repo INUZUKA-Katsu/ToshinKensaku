@@ -59,7 +59,18 @@ class ToshinApp
     param = req.POST()
     header  = Hash.new
     kensu = 0
-    if (req.post? and req.path=="/report/search") or (req.get? and req.path=="/joho/yokohama")
+    if req.path=="/"
+      if req.post? and param.keys.include? "joken"
+        #検索結果画面から「戻る」ボタンで検索条件画面に戻るとき、フォームに前回の検索条件を設定して表示する。
+        header["content-type"] = 'text/html'
+        response               = get_index(param)
+      else
+        #初期画面を普通に開くときの処理
+        header["content-type"]   = 'text/html'
+        response                 = File.read("index.html")
+      end
+      
+    elsif (req.post? and req.path=="/report/search") or (req.get? and req.path=="/joho/yokohama")
     # 「答申データベース検索」画面で検索を実行したとき
     # または、「例規集、ほか各種検索」画面で「横浜市の答申を検索(DB検索)」を実行したときの処理
       if req.post?
@@ -113,14 +124,6 @@ class ToshinApp
       header["content-type"]   = 'text/html'
       response                 = html
     
-    elsif req.post? and req.path=="/return" and param.keys.include? "joken"
-    #検索結果画面から「戻る」ボタンで検索条件画面に戻るとき、フォームに前回の検索条件を設定して表示する。
-      header["content-type"] = 'text/html'
-      response               = get_index(param)
-    #elsif req.path.include? ".css" or req.path.include? ".js"
-    #  header["content-type"] = get_type(req.path)
-    #  p req.path
-    #  response               = File.read(req.path[2,-1]) #左端の"/"をはずす。
     elsif req.post? and req.path=="/kuni_toshin"
       p param.keys
       search_word = param["search_word"]
@@ -245,7 +248,7 @@ use Rack::Static,
       root: "."
 
 use Rack::Static, 
-      urls: {"/"=>"index.html"},
+      urls: {"/index.html"=>"index.html"},
       root: "."
 
 use TimerMiddleware
