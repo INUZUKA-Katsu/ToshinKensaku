@@ -159,7 +159,55 @@
       let btnObj1 = document.getElementsByName("search")[0];
       let btnObj2 = document.getElementsByName("btnG")[0];
       let chkOpt;
-      if(val.match(/shinsakai/)){
+      
+      // テキスト入力時は、現在選択されているラジオボタンの状態を確認
+      if(name=="yahoo_text_box" || name=="google_text_box"){
+        // Yahoo側のラジオボタンの選択状態を確認
+        let vsOpts = document.getElementsByName("vs");
+        let selectedVs = get_opt(vsOpts, "checked");
+        
+        if(selectedVs && selectedVs.value.match(/shinsakai/)){
+          let subObj1 = document.getElementsByName("ch")[0];
+          if(subObj1.checked==true){
+            btnObj1.value = "横浜市DB検索";
+            clear_quotation();
+          }else{
+            btnObj1.value = "Yahoo 検索";
+          }
+        }else if(selectedVs && selectedVs.value=="tokyo"){
+          btnObj1.value = "東京都DB検索"
+          clear_quotation();
+        }else if(selectedVs && selectedVs.value=="soumusyo"){
+          btnObj1.value = "総務省DB検索"
+          clear_quotation();
+        }else{
+          btnObj1.value = "Yahoo 検索"
+          clear_quotation();
+        }
+        
+        // Google側のラジオボタンの選択状態を確認
+        let sitesearchOpts = document.getElementsByName("sitesearch");
+        let selectedSitesearch = get_opt(sitesearchOpts, "checked");
+        
+        if(selectedSitesearch && selectedSitesearch.value.match(/shinsakai/)){
+          let subObj2 = document.getElementsByName("ch2")[0];
+          if(subObj2.checked==true){
+            btnObj2.value = "横浜市DB検索";
+            clear_quotation();
+          }else{
+            btnObj2.value = "Google 検索";
+          }
+        }else if(selectedSitesearch && selectedSitesearch.value=="tokyo"){
+          btnObj2.value = "東京都DB検索"
+          clear_quotation();
+        }else if(selectedSitesearch && selectedSitesearch.value=="soumusyo"){
+          btnObj2.value = "総務省DB検索"
+          clear_quotation();
+        }else{
+          btnObj2.value = "Google 検索"
+          clear_quotation();
+        }
+      }else if(val.match(/shinsakai/)){
         let subObj1 = document.getElementsByName("ch")[0];
         let subObj2 = document.getElementsByName("ch2")[0];
         if(subObj1.checked==true){
@@ -193,7 +241,9 @@
       }else if(name=="sitesearch"){
         chkOpt = document.getElementsByName("vs");
       }
-      get_opt(chkOpt,val).checked = true;
+      if(chkOpt){
+        get_opt(chkOpt,val).checked = true;
+      }
     }
     function change_opt(name,val){
       let SiteUrl      ;
